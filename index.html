@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DEBLUG – Sign Up / Hub</title>
+  <title>DEBLUG – Sign Up</title>
 
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #0f172a;
       color: #e5e7eb;
-      margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
+      margin: 0;
     }
 
     .card {
@@ -26,10 +26,7 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
 
-    h1 {
-      text-align: center;
-      color: #38bdf8;
-    }
+    h1 { text-align: center; color: #38bdf8; }
 
     input {
       width: 100%;
@@ -39,24 +36,27 @@
       border: 1px solid #334155;
       background: #020617;
       color: #e5e7eb;
+      font-size: 14px;
     }
 
     .password-box {
       position: relative;
     }
 
-    .eye {
+    .eye-btn {
       position: absolute;
-      right: 12px;
-      top: 14px;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: none;
       cursor: pointer;
-      user-select: none;
     }
 
     #usernameHint {
       font-size: 12px;
-      color: #ccc;
       margin-top: 4px;
+      color: #ccc;
     }
 
     button {
@@ -71,60 +71,62 @@
       cursor: pointer;
     }
 
-    button:hover {
-      background: #0ea5e9;
-    }
-
-    p {
-      font-size: 13px;
-      text-align: center;
-      margin-top: 15px;
-    }
-
-    a {
-      color: #38bdf8;
-      text-decoration: none;
-    }
+    button:hover { background: #0ea5e9; }
 
     #status {
-      margin-top: 10px;
       font-size: 13px;
+      margin-top: 10px;
       text-align: center;
     }
+
+    .hidden { display: none; }
 
   </style>
 </head>
 <body>
 
   <div class="card">
-    <h1>DEBLUG</h1>
 
-    <!-- Email -->
-    <input type="email" id="email" placeholder="Email">
+    <!-- STEP 1: Email + Password -->
+    <div id="step1">
+      <h1>DEBLUG Sign Up</h1>
 
-    <!-- Password -->
-    <div class="password-box">
-      <input type="password" id="password" placeholder="Password">
-      <span class="eye" id="toggleEye">👁</span>
+      <input type="email" id="email" placeholder="Email">
+      
+      <div class="password-box">
+        <input type="password" id="password" placeholder="Password">
+        <button type="button" id="toggleEye" class="eye-btn">
+          <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 24 24" fill="#ccc">
+            <path d="M12 4.5C7.305 4.5 3.13 7.36 1 12c2.13 4.64 6.305 7.5 11 7.5s8.87-2.86 11-7.5c-2.13-4.64-6.305-7.5-11-7.5zm0 13c-3.03 0-5.5-2.47-5.5-5.5S8.97 6.5 12 6.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5zm0-9a3.5 3.5 0 100 7 3.5 3.5 0 000-7z"/>
+          </svg>
+          <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 24 24" fill="#ccc" style="display:none">
+            <path d="M12 6a9.77 9.77 0 017.94 4.5 9.77 9.77 0 01-15.88 0A9.77 9.77 0 0112 6zm0 8a3.5 3.5 0 003.5-3.5 3.5 3.5 0 00-3.5-3.5 3.5 3.5 0 00-3.5 3.5A3.5 3.5 0 0012 14z"/>
+          </svg>
+          <path d="M0 0h24v24H0z" fill="none"/>
+        </button>
+      </div>
+
+      <input type="text" id="referral" placeholder="Referral code (optional)">
+      <button id="nextStep">Next</button>
+      <div id="status"></div>
     </div>
 
-    <!-- Username -->
-    <input type="text" id="username" placeholder="Username">
-    <div id="usernameHint">
-      Minimum 8 characters, must include at least 2 numbers
+    <!-- STEP 2: Username -->
+    <div id="step2" class="hidden">
+      <h2>Choose Username</h2>
+      <input type="text" id="username" placeholder="Username">
+      <button id="editUsernameBtn">Edit</button>
+      <div id="usernameHint">
+        Minimum 8 characters, must include at least 2 numbers
+      </div>
+      <button id="finishSignup">Finish Signup</button>
+      <div id="usernameStatus"></div>
     </div>
 
-    <!-- Referral -->
-    <input type="text" id="referral" placeholder="Referral code (optional)">
-
-    <button id="signupBtn">Sign Up</button>
-
-    <p>Already have an account? <a href="login.html">Login</a></p>
-
-    <div id="status"></div>
   </div>
 
   <script type="module">
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, query, collection, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -139,106 +141,118 @@
       appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
     // Password eye toggle
     const passwordInput = document.getElementById("password");
-    const eye = document.getElementById("toggleEye");
-    eye.addEventListener("click", () => {
-      passwordInput.type = passwordInput.type === "password" ? "text" : "password";
+    const toggleEye = document.getElementById("toggleEye");
+    const eyeOpen = document.getElementById("eyeOpen");
+    const eyeClosed = document.getElementById("eyeClosed");
+
+    toggleEye.addEventListener("click", () => {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      eyeOpen.style.display = isPassword ? "none" : "block";
+      eyeClosed.style.display = isPassword ? "block" : "none";
+    });
+
+    // Step navigation
+    const step1 = document.getElementById("step1");
+    const step2 = document.getElementById("step2");
+    const nextStep = document.getElementById("nextStep");
+    const finishSignup = document.getElementById("finishSignup");
+
+    let signupData = {};
+
+    nextStep.addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const referral = document.getElementById("referral").value.trim();
+      const status = document.getElementById("status");
+
+      if (!email || !password) { status.innerText = "Email and password required"; return; }
+
+      status.innerText = "Checking email...";
+      try {
+        // Check if email exists
+        const userQuery = query(collection(db, "users"), where("email", "==", email));
+        const snap = await getDocs(userQuery);
+        if (!snap.empty) { status.innerText = "Email already exists"; return; }
+
+        signupData.email = email;
+        signupData.password = password;
+        signupData.referral = referral;
+        step1.classList.add("hidden");
+        step2.classList.remove("hidden");
+
+        // Generate auto username
+        const countSnap = await getDocs(collection(db, "users"));
+        const suggested = "user" + (countSnap.size + 1).toString().padStart(2, "0");
+        document.getElementById("username").value = suggested;
+
+      } catch (err) {
+        status.innerText = err.message;
+      }
     });
 
     // Username live validation
     const usernameInput = document.getElementById("username");
-    const hint = document.getElementById("usernameHint");
+    const usernameHint = document.getElementById("usernameHint");
+    const usernameStatus = document.getElementById("usernameStatus");
 
-    usernameInput.addEventListener("input", () => {
-      const value = usernameInput.value;
-      const numbers = value.replace(/[^0-9]/g, "").length;
+    usernameInput.addEventListener("input", async () => {
+      const val = usernameInput.value.trim();
+      const numbers = val.replace(/[^0-9]/g, "").length;
 
-      if (value.length === 0) {
-        hint.style.color = "#ccc";
-        return;
-      }
+      if (val.length === 0) { usernameHint.style.color="#ccc"; usernameStatus.innerText=""; return; }
+      if (val.length <8 || numbers<2) { usernameHint.style.color="red"; usernameStatus.innerText=""; return; }
 
-      if (value.length >= 8 && numbers >= 2) {
-        hint.style.color = "green";
-      } else {
-        hint.style.color = "red";
-      }
+      usernameHint.style.color="green";
+
+      // Check uniqueness
+      const q = query(collection(db,"users"), where("username","==",val.toLowerCase()));
+      const snap = await getDocs(q);
+      if (!snap.empty) { usernameStatus.innerText="Already exists"; usernameStatus.style.color="red"; } 
+      else { usernameStatus.innerText="Ready for use"; usernameStatus.style.color="green"; }
     });
 
-    // Sign Up button
-    const signupBtn = document.getElementById("signupBtn");
-    const statusText = document.getElementById("status");
-
-    signupBtn.addEventListener("click", async () => {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const username = usernameInput.value.trim();
-      const referral = document.getElementById("referral").value.trim();
-
-      // Basic validation
-      const numberCount = username.replace(/[^0-9]/g, "").length;
-      if (!email || !password) {
-        statusText.innerText = "Email and password are required";
-        return;
-      }
-      if (username.length < 8 || numberCount < 2) {
-        statusText.innerText = "Username must be at least 8 characters with 2 numbers";
-        return;
-      }
-
-      statusText.innerText = "Creating account...";
+    // Finish signup
+    finishSignup.addEventListener("click", async () => {
+      const username = usernameInput.value.trim().toLowerCase();
+      if (username.length<8 || username.replace(/[^0-9]/g,"").length<2) { usernameStatus.innerText="Invalid username"; return; }
+      if (usernameStatus.innerText==="Already exists") { return; }
 
       try {
-        // Check if username already exists
-        const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          statusText.innerText = "Username already taken";
-          return;
-        }
-
-        // Create user in Firebase Auth
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const cred = await createUserWithEmailAndPassword(auth, signupData.email, signupData.password);
         const uid = cred.user.uid;
 
-        // Save user profile
-        await setDoc(doc(db, "users", uid), {
-          email,
-          username: username.toLowerCase(),
-          referralCode: uid.slice(0, 6),
-          referredBy: referral || null,
+        await setDoc(doc(db,"users",uid),{
+          email: signupData.email,
+          username,
+          referralCode: uid.slice(0,6),
+          referredBy: signupData.referral||null,
           createdAt: Date.now(),
-          followers: 0,
-          following: 0,
-          balance: 0
+          followers:0,
+          following:0,
+          balance:0
         });
 
-        // Handle referral earning
-        if (referral) {
-          const refQuery = query(collection(db, "users"), where("referralCode", "==", referral));
-          const refSnap = await getDocs(refQuery);
-          if (!refSnap.empty) {
-            const refUser = refSnap.docs[0];
-            await updateDoc(doc(db, "users", refUser.id), {
-              balance: increment(100)
-            });
+        // Referral reward
+        if (signupData.referral) {
+          const refQuery = query(collection(db,"users"), where("referralCode","==",signupData.referral));
+          const snap = await getDocs(refQuery);
+          if (!snap.empty) { 
+            const refUser = snap.docs[0];
+            await updateDoc(doc(db,"users",refUser.id), { balance: increment(100) });
           }
         }
 
-        statusText.innerText = "Account created! Redirecting...";
-        setTimeout(() => {
-          window.location.href = "fyp.html";
-        }, 1500);
+        usernameStatus.innerText="Account created! Redirecting...";
+        setTimeout(()=>{ window.location.href="fyp.html"; },1500);
 
-      } catch (err) {
-        statusText.innerText = err.message;
-      }
+      } catch(err) { usernameStatus.innerText=err.message; }
     });
 
   </script>
