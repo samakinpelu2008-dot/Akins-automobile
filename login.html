@@ -2,26 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Login</title>
+  <title>DEBLUG – Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
     body {
-      background: #0f172a;
+      background: #0d1117;
+      color: white;
       font-family: Arial, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      color: white;
     }
 
     .container {
-      background: #020617;
-      padding: 25px;
       width: 100%;
-      max-width: 380px;
-      border-radius: 10px;
+      max-width: 400px;
+      padding: 20px;
+      background: #161b22;
+      border-radius: 8px;
     }
 
     h2 {
@@ -32,33 +32,31 @@
     input {
       width: 100%;
       padding: 12px;
-      margin-bottom: 12px;
-      border-radius: 6px;
+      margin-bottom: 10px;
+      border-radius: 5px;
       border: none;
       outline: none;
-      font-size: 15px;
     }
 
     button {
       width: 100%;
       padding: 12px;
-      background: #2563eb;
+      background: #238636;
       color: white;
       border: none;
-      border-radius: 6px;
-      font-size: 16px;
+      border-radius: 5px;
       cursor: pointer;
     }
 
     button:hover {
-      background: #1e40af;
+      opacity: 0.9;
     }
 
     .forgot {
       text-align: right;
+      margin-top: 5px;
       font-size: 14px;
-      margin-bottom: 15px;
-      color: #93c5fd;
+      color: #58a6ff;
       cursor: pointer;
     }
 
@@ -67,128 +65,121 @@
     }
 
     .error {
-      color: #f87171;
+      color: #ff7b72;
+      margin-top: 10px;
       font-size: 14px;
-      margin-bottom: 10px;
-      display: none;
+      text-align: center;
     }
 
     .success {
-      color: #4ade80;
+      color: #3fb950;
+      margin-top: 10px;
       font-size: 14px;
-      margin-bottom: 10px;
-      display: none;
+      text-align: center;
     }
 
-    .signup-link {
+    .signup {
       text-align: center;
       margin-top: 15px;
       font-size: 14px;
     }
 
-    .signup-link a {
-      color: #60a5fa;
+    .signup a {
+      color: #58a6ff;
       text-decoration: none;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h2>Login</h2>
+<div class="container">
+  <h2>Login to DEBLUG</h2>
 
-    <div class="error" id="errorMsg"></div>
-    <div class="success" id="successMsg"></div>
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Password" />
 
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password" />
+  <button id="loginBtn">Login</button>
 
-    <div class="forgot" id="forgotPassword">Forgot password?</div>
+  <div class="forgot" id="forgotPassword">Forgot password?</div>
 
-    <button id="loginBtn">Login</button>
+  <div class="error" id="errorMsg"></div>
+  <div class="success" id="successMsg"></div>
 
-    <div class="signup-link">
-      Don’t have an account?
-      <a href="index.html">Sign up</a>
-    </div>
+  <div class="signup">
+    Don’t have an account?
+    <a href="index.html">Sign up</a>
   </div>
+</div>
 
-  <!-- Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import {
-      getAuth,
-      signInWithEmailAndPassword,
-      sendPasswordResetEmail
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    sendPasswordResetEmail
+  } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
-      authDomain: "fir-chat-f8d55.firebaseapp.com",
-      projectId: "fir-chat-f8d55",
-      storageBucket: "fir-chat-f8d55.firebasestorage.app",
-      messagingSenderId: "792896094694",
-      appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
+    authDomain: "fir-chat-f8d55.firebaseapp.com",
+    projectId: "fir-chat-f8d55",
+    storageBucket: "fir-chat-f8d55.firebasestorage.app",
+    messagingSenderId: "792896094694",
+    appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
 
-    const emailInput = document.getElementById("email");
-    const passwordInput = document.getElementById("password");
-    const errorMsg = document.getElementById("errorMsg");
-    const successMsg = document.getElementById("successMsg");
+  const loginBtn = document.getElementById("loginBtn");
+  const forgotBtn = document.getElementById("forgotPassword");
+  const errorMsg = document.getElementById("errorMsg");
+  const successMsg = document.getElementById("successMsg");
 
-    // LOGIN
-    document.getElementById("loginBtn").addEventListener("click", () => {
-      errorMsg.style.display = "none";
-      successMsg.style.display = "none";
+  loginBtn.addEventListener("click", () => {
+    errorMsg.textContent = "";
+    successMsg.textContent = "";
 
-      const email = emailInput.value.trim();
-      const password = passwordInput.value;
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
 
-      if (!email || !password) {
-        errorMsg.textContent = "Please fill in all fields";
-        errorMsg.style.display = "block";
-        return;
-      }
+    if (!email || !password) {
+      errorMsg.textContent = "Please fill in all fields";
+      return;
+    }
 
-      signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          window.location.href = "dashboard.html";
-        })
-        .catch(() => {
-          errorMsg.textContent = "Invalid email or password";
-          errorMsg.style.display = "block";
-        });
-    });
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => {
+        window.location.href = "dashboard.html";
+      })
+      .catch(() => {
+        errorMsg.textContent = "Invalid email or password";
+      });
+  });
 
-    // FORGOT PASSWORD
-    document.getElementById("forgotPassword").addEventListener("click", () => {
-      errorMsg.style.display = "none";
-      successMsg.style.display = "none";
+  forgotBtn.addEventListener("click", () => {
+    errorMsg.textContent = "";
+    successMsg.textContent = "";
 
-      const email = emailInput.value.trim();
+    const email = document.getElementById("email").value.trim();
 
-      if (!email) {
-        errorMsg.textContent = "Enter your email first";
-        errorMsg.style.display = "block";
-        return;
-      }
+    if (!email) {
+      errorMsg.textContent = "Enter your email to reset password";
+      return;
+    }
 
-      sendPasswordResetEmail(auth, email)
-        .then(() => {
-          successMsg.textContent =
-            "Password reset email sent. Check your inbox.";
-          successMsg.style.display = "block";
-        })
-        .catch(() => {
-          errorMsg.textContent =
-            "Unable to send reset email. Check the email address.";
-          errorMsg.style.display = "block";
-        });
-    });
-  </script>
+    sendPasswordResetEmail(auth, email)
+      .then(() => {
+        successMsg.textContent =
+          "Password reset link sent. Check your email (and spam).";
+      })
+      .catch(() => {
+        errorMsg.textContent =
+          "Email not found or password reset not enabled";
+      });
+  });
+</script>
 
 </body>
 </html>
