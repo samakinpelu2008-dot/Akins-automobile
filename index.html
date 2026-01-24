@@ -1,22 +1,97 @@
-<!DOCTYPE html>
-<html lang="en">
-<h1>
-AKINS AUTOMOBILE 
-    <title>AKINS AUTOMOBILE</title>
-</h1>
-<P>WHAT IS AKINS AUTOMOBILE ALL ABOUT?</P>
-This is a buiness that deals with repairs of automobiles, that gurantees your car 100% safety unlike the street mechanics, although they are cheap but not safe and most of the time they dont treat the vechiles with care, but here we are ready to take very good care of your car because in AKINS AUTOMOBILE every car is treated like our car.
-<p>WHAT WE DO</p>
-<p>* TYRE REPAIRS </p>
-<p>* TYRE ALLIGNMENT</p>
-<p>* AUTO REPAIRS</p> 
-<p>* ENGINE REPAIRS</p>
-<p>* TYRE PUMPING</p>
-<p>* AND ALL POSSIBLE PROBLEMS OF A CAR</p>
-<p>And for all our customers you dont go empty handed, during the repair process you can stay in the customer lounge and watch tv in an air conditioned place, then after we are done you will receive a THANKS FOR COMING bag.</p>
-<body>
-   <img src="BACKGROUND PICS/BACKGROUND PICS/engine 1.jpg" alt="">
-   <img src="BACKGROUND PICS/BACKGROUND PICS/engine 2.jpg" alt="">
-<img src="BACKGROUND PICS/BACKGROUND PICS/engine 3.jpg" alt="">
-</body>
-</html>
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DEBLUG</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#0f172a; color:#e5e7eb; margin:0; }
+    .center { min-height:100vh; display:flex; align-items:center; justify-content:center; }
+    .card { background:#020617; padding:30px; border-radius:10px; width:100%; max-width:400px; }
+    h1 { text-align:center; color:#38bdf8; }
+    input, button { width:100%; padding:12px; margin-top:10px; border-radius:6px; border:none; }
+    input { background:#020617; border:1px solid #334155; color:#e5e7eb; }
+    button { background:#38bdf8; color:#020617; font-weight:bold; cursor:pointer; }
+    button:hover { background:#0ea5e9; }
+    p { font-size:13px; text-align:center; margin-top:15px; }
+    a { color:#38bdf8; text-decoration:none; }
+  </style>
+</head>
+<body><div class="center">
+  <div class="card">
+    <h1>DEBLUG</h1>
+    <input id="email" type="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
+    <input id="username" type="text" placeholder="Username" />
+    <input id="ref" type="text" placeholder="Referral code (optional)" />
+    <button onclick="register()">Register</button>
+    <p>Already have an account? <a href="login.html">Login</a></p>
+  </div>
+</div><script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDocs, query, where, collection, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
+    authDomain: "fir-chat-f8d55.firebaseapp.com",
+    projectId: "fir-chat-f8d55",
+    storageBucket: "fir-chat-f8d55.firebasestorage.app",
+    messagingSenderId: "792896094694",
+    appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  window.register = async function () {
+    const email = email.value;
+    const password = password.value;
+    const username = username.value.toLowerCase();
+    const refCode = ref.value.trim();
+
+    if (!email || !password || !username) {
+      alert("All fields except referral are required");
+      return;
+    }
+
+    // check username uniqueness
+    const q = query(collection(db, "users"), where("username", "==", username));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      alert("Username already taken");
+      return;
+    }
+
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = cred.user.uid;
+
+    const myRefCode = username + Math.floor(100 + Math.random() * 900);
+
+    await setDoc(doc(db, "users", uid), {
+      email,
+      username,
+      referralCode: myRefCode,
+      referredBy: refCode || null,
+      createdAt: Date.now()
+    });
+
+    // handle referral earning
+    if (refCode) {
+      const rq = query(collection(db, "users"), where("referralCode", "==", refCode));
+      const rs = await getDocs(rq);
+      if (!rs.empty) {
+        const refUser = rs.docs[0];
+        await updateDoc(doc(db, "earnings", refUser.id), {
+          balance: increment(100),
+          referralEarnings: increment(100)
+        }).catch(async () => {
+          await setDoc(doc(db, "earnings", refUser.id), { balance: 100, referralEarnings: 100 });
+        });
+      }
+    }
+
+    location.href = "fyp.html";
+  }
+</script></body>
+    </html>
