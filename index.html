@@ -26,8 +26,7 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
 
-    h1 { text-align: center; color: #38bdf8; }
-
+    h1, h2 { text-align: center; color: #38bdf8; }
     input {
       width: 100%;
       padding: 12px;
@@ -39,7 +38,7 @@
       font-size: 14px;
     }
 
-    #usernameHint {
+    #usernameHint div {
       font-size: 12px;
       margin-top: 4px;
       color: #ccc;
@@ -59,6 +58,11 @@
 
     button:hover { background: #0ea5e9; }
 
+    button:disabled {
+      background: #334155;
+      cursor: not-allowed;
+    }
+
     #status, #usernameStatus {
       font-size: 13px;
       margin-top: 10px;
@@ -66,6 +70,34 @@
     }
 
     .hidden { display: none; }
+
+    /* Terms modal */
+    .modal {
+      display: none; 
+      position: fixed;
+      z-index: 10;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.7);
+    }
+
+    .modal-content {
+      background-color: #020617;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      color: #e5e7eb;
+    }
+
+    .close {
+      color: #38bdf8;
+      float: right;
+      font-size: 20px;
+      cursor: pointer;
+    }
 
   </style>
 </head>
@@ -76,11 +108,9 @@
     <!-- STEP 1: Email + Password -->
     <div id="step1">
       <h1>DEBLUG Sign Up</h1>
-
       <input type="email" id="email" placeholder="Email">
       <input type="password" id="password" placeholder="Password">
       <input type="text" id="referral" placeholder="Referral code (optional)">
-
       <button id="nextStep">Next</button>
       <div id="status"></div>
     </div>
@@ -88,15 +118,36 @@
     <!-- STEP 2: Username -->
     <div id="step2" class="hidden">
       <h2>Choose Username</h2>
-      <input type="text" id="username" placeholder="Username">
+      <input type="text" id="username" placeholder="Username" readonly>
       <button id="editUsernameBtn">Edit</button>
+
       <div id="usernameHint">
-        Minimum 8 characters, must include at least 2 numbers
+        <div id="charHint">Minimum 8 characters</div>
+        <div id="numberHint">Must include at least 2 numbers</div>
       </div>
-      <button id="finishSignup">Finish Signup</button>
+
+      <div style="margin-top:10px;">
+        <input type="checkbox" id="terms"> I have read the <a href="#" id="termsLink">Terms and Conditions</a>
+      </div>
+
+      <button id="finishSignup" disabled>Finish Signup</button>
       <div id="usernameStatus"></div>
     </div>
 
+  </div>
+
+  <!-- Terms modal -->
+  <div id="termsModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeModal">&times;</span>
+      <h3>Terms and Conditions</h3>
+      <p>
+        Welcome to DEBLUG! By signing up, you agree to our terms of use, privacy policy, and community guidelines.
+        Use responsibly and respect others. All content you post should comply with local laws. DEBLUG is not
+        responsible for user-generated content. You may be monetized for your posts under our rules. 
+        Enjoy connecting and sharing safely!
+      </p>
+    </div>
   </div>
 
   <script type="module">
@@ -122,6 +173,12 @@
     const step2 = document.getElementById("step2");
     const nextStep = document.getElementById("nextStep");
     const finishSignup = document.getElementById("finishSignup");
+    const usernameInput = document.getElementById("username");
+    const editBtn = document.getElementById("editUsernameBtn");
+    const charHint = document.getElementById("charHint");
+    const numberHint = document.getElementById("numberHint");
+    const usernameStatus = document.getElementById("usernameStatus");
+    const termsCheckbox = document.getElementById("terms");
 
     let signupData = {};
 
@@ -149,37 +206,55 @@
         // Auto username
         const countSnap = await getDocs(collection(db, "users"));
         const suggested = "user" + (countSnap.size + 1).toString().padStart(2,"0");
-        document.getElementById("username").value = suggested;
+        usernameInput.value = suggested;
+
+        validateUsername(); // initial validation
 
       } catch(err) { status.innerText = err.message; }
     });
 
-    // Username live validation
-    const usernameInput = document.getElementById("username");
-    const usernameHint = document.getElementById("usernameHint");
-    const usernameStatus = document.getElementById("usernameStatus");
-
-    usernameInput.addEventListener("input", async () => {
-      const val = usernameInput.value.trim();
-      const numbers = val.replace(/[^0-9]/g, "").length;
-
-      if (val.length === 0) { usernameHint.style.color="#ccc"; usernameStatus.innerText=""; return; }
-      if (val.length <8 || numbers<2) { usernameHint.style.color="red"; usernameStatus.innerText=""; return; }
-
-      usernameHint.style.color="green";
-
-      const q = query(collection(db,"users"), where("username","==",val.toLowerCase()));
-      const snap = await getDocs(q);
-      if (!snap.empty) { usernameStatus.innerText="Already exists"; usernameStatus.style.color="red"; } 
-      else { usernameStatus.innerText="Ready for use"; usernameStatus.style.color="green"; }
+    // Enable editing username
+    editBtn.addEventListener("click", () => {
+      usernameInput.removeAttribute("readonly");
+      usernameInput.focus();
     });
+
+    // Username validation function
+    async function validateUsername() {
+      const val = usernameInput.value.trim();
+      const numCount = val.replace(/[^0-9]/g,"").length;
+
+      // Character hint
+      if(val.length >= 8) charHint.style.color="green";
+      else charHint.style.color="red";
+
+      // Number hint
+      if(numCount >=2) numberHint.style.color="green";
+      else numberHint.style.color="red";
+
+      // Check availability only if both green
+      if(charHint.style.color==="green" && numberHint.style.color==="green") {
+        const q = query(collection(db,"users"), where("username","==",val.toLowerCase()));
+        const snap = await getDocs(q);
+        if(!snap.empty) { usernameStatus.innerText="Already exists"; usernameStatus.style.color="red"; }
+        else { usernameStatus.innerText="Ready for use"; usernameStatus.style.color="green"; }
+      } else { usernameStatus.innerText=""; }
+
+      updateFinishBtn();
+    }
+
+    usernameInput.addEventListener("input", validateUsername);
+    termsCheckbox.addEventListener("change", updateFinishBtn);
+
+    function updateFinishBtn() {
+      const ready = charHint.style.color==="green" && numberHint.style.color==="green" &&
+                    usernameStatus.innerText==="Ready for use" && termsCheckbox.checked;
+      finishSignup.disabled = !ready;
+    }
 
     // Finish signup
     finishSignup.addEventListener("click", async () => {
       const username = usernameInput.value.trim().toLowerCase();
-      if (username.length<8 || username.replace(/[^0-9]/g,"").length<2) { usernameStatus.innerText="Invalid username"; return; }
-      if (usernameStatus.innerText==="Already exists") { return; }
-
       try {
         const cred = await createUserWithEmailAndPassword(auth, signupData.email, signupData.password);
         const uid = cred.user.uid;
@@ -195,10 +270,11 @@
           balance:0
         });
 
-        if (signupData.referral) {
+        // Referral reward
+        if(signupData.referral){
           const refQuery = query(collection(db,"users"), where("referralCode","==",signupData.referral));
           const snap = await getDocs(refQuery);
-          if (!snap.empty) { 
+          if(!snap.empty){
             const refUser = snap.docs[0];
             await updateDoc(doc(db,"users",refUser.id), { balance: increment(100) });
           }
@@ -207,8 +283,17 @@
         usernameStatus.innerText="Account created! Redirecting...";
         setTimeout(()=>{ window.location.href="fyp.html"; },1500);
 
-      } catch(err) { usernameStatus.innerText=err.message; }
+      } catch(err){ usernameStatus.innerText=err.message; }
     });
+
+    // Terms modal
+    const termsLink = document.getElementById("termsLink");
+    const modal = document.getElementById("termsModal");
+    const closeModal = document.getElementById("closeModal");
+
+    termsLink.addEventListener("click", (e)=>{ e.preventDefault(); modal.style.display="block"; });
+    closeModal.addEventListener("click", ()=>{ modal.style.display="none"; });
+    window.addEventListener("click", (e)=>{ if(e.target==modal) modal.style.display="none"; });
 
   </script>
 
