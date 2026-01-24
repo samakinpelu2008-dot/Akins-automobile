@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DEBLUG – Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      background: #020617;
+      padding: 30px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    h1 { text-align: center; color: #38bdf8; }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
+      border-radius: 6px;
+      border: none;
+      background: #38bdf8;
+      color: #020617;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover { background: #0ea5e9; }
+    #status {
+      font-size: 13px;
+      margin-top: 10px;
+      text-align: center;
+      color: red;
+    }
+
+    a { color: #38bdf8; text-decoration: none; font-size: 12px; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>DEBLUG Login</h1>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button id="loginBtn">Login</button>
+    <div id="status"></div>
+    <div style="margin-top:10px;text-align:center;">
+      <a href="#">Forgot Password?</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
+      authDomain: "fir-chat-f8d55.firebaseapp.com",
+      projectId: "fir-chat-f8d55",
+      storageBucket: "fir-chat-f8d55.firebasestorage.app",
+      messagingSenderId: "792896094694",
+      appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const loginBtn = document.getElementById("loginBtn");
+    const status = document.getElementById("status");
+
+    loginBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if(!email || !password) {
+        status.innerText = "Please enter email and password";
+        return;
+      }
+
+      status.innerText = "Logging in...";
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        status.style.color = "green";
+        status.innerText = "Login successful! Redirecting...";
+        setTimeout(()=>{ window.location.href="fyp.html"; },1000);
+      } catch(err) {
+        status.style.color = "red";
+        if(err.code === "auth/user-not-found") status.innerText = "Email not found";
+        else if(err.code === "auth/wrong-password") status.innerText = "Incorrect password";
+        else status.innerText = err.message;
+      }
+    });
+
+  </script>
+
+</body>
+</html>
