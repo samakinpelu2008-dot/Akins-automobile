@@ -1,97 +1,247 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DEBLUG</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DEBLUG – Sign Up / Hub</title>
+
   <style>
-    body { font-family: Arial, sans-serif; background:#0f172a; color:#e5e7eb; margin:0; }
-    .center { min-height:100vh; display:flex; align-items:center; justify-content:center; }
-    .card { background:#020617; padding:30px; border-radius:10px; width:100%; max-width:400px; }
-    h1 { text-align:center; color:#38bdf8; }
-    input, button { width:100%; padding:12px; margin-top:10px; border-radius:6px; border:none; }
-    input { background:#020617; border:1px solid #334155; color:#e5e7eb; }
-    button { background:#38bdf8; color:#020617; font-weight:bold; cursor:pointer; }
-    button:hover { background:#0ea5e9; }
-    p { font-size:13px; text-align:center; margin-top:15px; }
-    a { color:#38bdf8; text-decoration:none; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: #020617;
+      padding: 30px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      text-align: center;
+      color: #38bdf8;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #020617;
+      color: #e5e7eb;
+    }
+
+    .password-box {
+      position: relative;
+    }
+
+    .eye {
+      position: absolute;
+      right: 12px;
+      top: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #usernameHint {
+      font-size: 12px;
+      color: #ccc;
+      margin-top: 4px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
+      border-radius: 6px;
+      border: none;
+      background: #38bdf8;
+      color: #020617;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0ea5e9;
+    }
+
+    p {
+      font-size: 13px;
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+
+    #status {
+      margin-top: 10px;
+      font-size: 13px;
+      text-align: center;
+    }
+
   </style>
 </head>
-<body><div class="center">
+<body>
+
   <div class="card">
     <h1>DEBLUG</h1>
-    <input id="email" type="email" placeholder="Email" />
-    <input id="password" type="password" placeholder="Password" />
-    <input id="username" type="text" placeholder="Username" />
-    <input id="ref" type="text" placeholder="Referral code (optional)" />
-    <button onclick="register()">Register</button>
+
+    <!-- Email -->
+    <input type="email" id="email" placeholder="Email">
+
+    <!-- Password -->
+    <div class="password-box">
+      <input type="password" id="password" placeholder="Password">
+      <span class="eye" id="toggleEye">👁</span>
+    </div>
+
+    <!-- Username -->
+    <input type="text" id="username" placeholder="Username">
+    <div id="usernameHint">
+      Minimum 8 characters, must include at least 2 numbers
+    </div>
+
+    <!-- Referral -->
+    <input type="text" id="referral" placeholder="Referral code (optional)">
+
+    <button id="signupBtn">Sign Up</button>
+
     <p>Already have an account? <a href="login.html">Login</a></p>
+
+    <div id="status"></div>
   </div>
-</div><script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDocs, query, where, collection, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
-    authDomain: "fir-chat-f8d55.firebaseapp.com",
-    projectId: "fir-chat-f8d55",
-    storageBucket: "fir-chat-f8d55.firebasestorage.app",
-    messagingSenderId: "792896094694",
-    appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
-  };
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, query, collection, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
+      authDomain: "fir-chat-f8d55.firebaseapp.com",
+      projectId: "fir-chat-f8d55",
+      storageBucket: "fir-chat-f8d55.firebasestorage.app",
+      messagingSenderId: "792896094694",
+      appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
+    };
 
-  window.register = async function () {
-    const email = email.value;
-    const password = password.value;
-    const username = username.value.toLowerCase();
-    const refCode = ref.value.trim();
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    if (!email || !password || !username) {
-      alert("All fields except referral are required");
-      return;
-    }
-
-    // check username uniqueness
-    const q = query(collection(db, "users"), where("username", "==", username));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      alert("Username already taken");
-      return;
-    }
-
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    const uid = cred.user.uid;
-
-    const myRefCode = username + Math.floor(100 + Math.random() * 900);
-
-    await setDoc(doc(db, "users", uid), {
-      email,
-      username,
-      referralCode: myRefCode,
-      referredBy: refCode || null,
-      createdAt: Date.now()
+    // Password eye toggle
+    const passwordInput = document.getElementById("password");
+    const eye = document.getElementById("toggleEye");
+    eye.addEventListener("click", () => {
+      passwordInput.type = passwordInput.type === "password" ? "text" : "password";
     });
 
-    // handle referral earning
-    if (refCode) {
-      const rq = query(collection(db, "users"), where("referralCode", "==", refCode));
-      const rs = await getDocs(rq);
-      if (!rs.empty) {
-        const refUser = rs.docs[0];
-        await updateDoc(doc(db, "earnings", refUser.id), {
-          balance: increment(100),
-          referralEarnings: increment(100)
-        }).catch(async () => {
-          await setDoc(doc(db, "earnings", refUser.id), { balance: 100, referralEarnings: 100 });
-        });
-      }
-    }
+    // Username live validation
+    const usernameInput = document.getElementById("username");
+    const hint = document.getElementById("usernameHint");
 
-    location.href = "fyp.html";
-  }
-</script></body>
-    </html>
+    usernameInput.addEventListener("input", () => {
+      const value = usernameInput.value;
+      const numbers = value.replace(/[^0-9]/g, "").length;
+
+      if (value.length === 0) {
+        hint.style.color = "#ccc";
+        return;
+      }
+
+      if (value.length >= 8 && numbers >= 2) {
+        hint.style.color = "green";
+      } else {
+        hint.style.color = "red";
+      }
+    });
+
+    // Sign Up button
+    const signupBtn = document.getElementById("signupBtn");
+    const statusText = document.getElementById("status");
+
+    signupBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const username = usernameInput.value.trim();
+      const referral = document.getElementById("referral").value.trim();
+
+      // Basic validation
+      const numberCount = username.replace(/[^0-9]/g, "").length;
+      if (!email || !password) {
+        statusText.innerText = "Email and password are required";
+        return;
+      }
+      if (username.length < 8 || numberCount < 2) {
+        statusText.innerText = "Username must be at least 8 characters with 2 numbers";
+        return;
+      }
+
+      statusText.innerText = "Creating account...";
+
+      try {
+        // Check if username already exists
+        const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          statusText.innerText = "Username already taken";
+          return;
+        }
+
+        // Create user in Firebase Auth
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = cred.user.uid;
+
+        // Save user profile
+        await setDoc(doc(db, "users", uid), {
+          email,
+          username: username.toLowerCase(),
+          referralCode: uid.slice(0, 6),
+          referredBy: referral || null,
+          createdAt: Date.now(),
+          followers: 0,
+          following: 0,
+          balance: 0
+        });
+
+        // Handle referral earning
+        if (referral) {
+          const refQuery = query(collection(db, "users"), where("referralCode", "==", referral));
+          const refSnap = await getDocs(refQuery);
+          if (!refSnap.empty) {
+            const refUser = refSnap.docs[0];
+            await updateDoc(doc(db, "users", refUser.id), {
+              balance: increment(100)
+            });
+          }
+        }
+
+        statusText.innerText = "Account created! Redirecting...";
+        setTimeout(() => {
+          window.location.href = "fyp.html";
+        }, 1500);
+
+      } catch (err) {
+        statusText.innerText = err.message;
+      }
+    });
+
+  </script>
+
+</body>
+</html>
