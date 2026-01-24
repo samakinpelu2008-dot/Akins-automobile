@@ -39,20 +39,6 @@
       font-size: 14px;
     }
 
-    .password-box {
-      position: relative;
-    }
-
-    .eye-btn {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      border: none;
-      background: none;
-      cursor: pointer;
-    }
-
     #usernameHint {
       font-size: 12px;
       margin-top: 4px;
@@ -73,7 +59,7 @@
 
     button:hover { background: #0ea5e9; }
 
-    #status {
+    #status, #usernameStatus {
       font-size: 13px;
       margin-top: 10px;
       text-align: center;
@@ -92,21 +78,9 @@
       <h1>DEBLUG Sign Up</h1>
 
       <input type="email" id="email" placeholder="Email">
-      
-      <div class="password-box">
-        <input type="password" id="password" placeholder="Password">
-        <button type="button" id="toggleEye" class="eye-btn">
-          <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 24 24" fill="#ccc">
-            <path d="M12 4.5C7.305 4.5 3.13 7.36 1 12c2.13 4.64 6.305 7.5 11 7.5s8.87-2.86 11-7.5c-2.13-4.64-6.305-7.5-11-7.5zm0 13c-3.03 0-5.5-2.47-5.5-5.5S8.97 6.5 12 6.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5zm0-9a3.5 3.5 0 100 7 3.5 3.5 0 000-7z"/>
-          </svg>
-          <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 24 24" fill="#ccc" style="display:none">
-            <path d="M12 6a9.77 9.77 0 017.94 4.5 9.77 9.77 0 01-15.88 0A9.77 9.77 0 0112 6zm0 8a3.5 3.5 0 003.5-3.5 3.5 3.5 0 00-3.5-3.5 3.5 3.5 0 00-3.5 3.5A3.5 3.5 0 0012 14z"/>
-          </svg>
-          <path d="M0 0h24v24H0z" fill="none"/>
-        </button>
-      </div>
-
+      <input type="password" id="password" placeholder="Password">
       <input type="text" id="referral" placeholder="Referral code (optional)">
+
       <button id="nextStep">Next</button>
       <div id="status"></div>
     </div>
@@ -129,9 +103,8 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, query, collection, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, updateDoc, increment, query, collection, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
       authDomain: "fir-chat-f8d55.firebaseapp.com",
@@ -145,20 +118,6 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Password eye toggle
-    const passwordInput = document.getElementById("password");
-    const toggleEye = document.getElementById("toggleEye");
-    const eyeOpen = document.getElementById("eyeOpen");
-    const eyeClosed = document.getElementById("eyeClosed");
-
-    toggleEye.addEventListener("click", () => {
-      const isPassword = passwordInput.type === "password";
-      passwordInput.type = isPassword ? "text" : "password";
-      eyeOpen.style.display = isPassword ? "none" : "block";
-      eyeClosed.style.display = isPassword ? "block" : "none";
-    });
-
-    // Step navigation
     const step1 = document.getElementById("step1");
     const step2 = document.getElementById("step2");
     const nextStep = document.getElementById("nextStep");
@@ -166,6 +125,7 @@
 
     let signupData = {};
 
+    // Step 1 → Step 2
     nextStep.addEventListener("click", async () => {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
@@ -176,7 +136,6 @@
 
       status.innerText = "Checking email...";
       try {
-        // Check if email exists
         const userQuery = query(collection(db, "users"), where("email", "==", email));
         const snap = await getDocs(userQuery);
         if (!snap.empty) { status.innerText = "Email already exists"; return; }
@@ -187,14 +146,12 @@
         step1.classList.add("hidden");
         step2.classList.remove("hidden");
 
-        // Generate auto username
+        // Auto username
         const countSnap = await getDocs(collection(db, "users"));
-        const suggested = "user" + (countSnap.size + 1).toString().padStart(2, "0");
+        const suggested = "user" + (countSnap.size + 1).toString().padStart(2,"0");
         document.getElementById("username").value = suggested;
 
-      } catch (err) {
-        status.innerText = err.message;
-      }
+      } catch(err) { status.innerText = err.message; }
     });
 
     // Username live validation
@@ -211,7 +168,6 @@
 
       usernameHint.style.color="green";
 
-      // Check uniqueness
       const q = query(collection(db,"users"), where("username","==",val.toLowerCase()));
       const snap = await getDocs(q);
       if (!snap.empty) { usernameStatus.innerText="Already exists"; usernameStatus.style.color="red"; } 
@@ -239,7 +195,6 @@
           balance:0
         });
 
-        // Referral reward
         if (signupData.referral) {
           const refQuery = query(collection(db,"users"), where("referralCode","==",signupData.referral));
           const snap = await getDocs(refQuery);
