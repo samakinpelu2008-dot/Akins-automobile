@@ -24,10 +24,7 @@
       border-radius: 8px;
     }
 
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
+    h2 { text-align: center; margin-bottom: 20px; }
 
     input {
       width: 100%;
@@ -48,10 +45,6 @@
       cursor: pointer;
     }
 
-    button:hover {
-      opacity: 0.9;
-    }
-
     .forgot {
       text-align: right;
       margin-top: 5px;
@@ -60,23 +53,8 @@
       cursor: pointer;
     }
 
-    .forgot:hover {
-      text-decoration: underline;
-    }
-
-    .error {
-      color: #ff7b72;
-      margin-top: 10px;
-      font-size: 14px;
-      text-align: center;
-    }
-
-    .success {
-      color: #3fb950;
-      margin-top: 10px;
-      font-size: 14px;
-      text-align: center;
-    }
+    .error { color: #ff7b72; text-align: center; margin-top: 10px; }
+    .success { color: #3fb950; text-align: center; margin-top: 10px; }
 
     .signup {
       text-align: center;
@@ -84,10 +62,7 @@
       font-size: 14px;
     }
 
-    .signup a {
-      color: #58a6ff;
-      text-decoration: none;
-    }
+    .signup a { color: #58a6ff; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -111,14 +86,10 @@
   </div>
 </div>
 
-<!-- Firebase -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import {
-    getAuth,
-    signInWithEmailAndPassword,
-    sendPasswordResetEmail
-  } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } 
+  from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
@@ -137,12 +108,12 @@
   const errorMsg = document.getElementById("errorMsg");
   const successMsg = document.getElementById("successMsg");
 
-  loginBtn.addEventListener("click", () => {
+  loginBtn.onclick = () => {
     errorMsg.textContent = "";
     successMsg.textContent = "";
 
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
+    const email = email.value.trim();
+    const password = password.value.trim();
 
     if (!email || !password) {
       errorMsg.textContent = "Please fill in all fields";
@@ -150,35 +121,21 @@
     }
 
     signInWithEmailAndPassword(auth, email, password)
-      .then(() => {
-        window.location.href = "dashboard.html";
-      })
-      .catch(() => {
-        errorMsg.textContent = "Invalid email or password";
-      });
-  });
+      .then(() => window.location.href = "fyp.html")
+      .catch(() => errorMsg.textContent = "Invalid email or password");
+  };
 
-  forgotBtn.addEventListener("click", () => {
-    errorMsg.textContent = "";
-    successMsg.textContent = "";
-
-    const email = document.getElementById("email").value.trim();
-
-    if (!email) {
-      errorMsg.textContent = "Enter your email to reset password";
+  forgotBtn.onclick = () => {
+    const emailVal = email.value.trim();
+    if (!emailVal) {
+      errorMsg.textContent = "Enter your email first";
       return;
     }
 
-    sendPasswordResetEmail(auth, email)
-      .then(() => {
-        successMsg.textContent =
-          "Password reset link sent. Check your email (and spam).";
-      })
-      .catch(() => {
-        errorMsg.textContent =
-          "Email not found or password reset not enabled";
-      });
-  });
+    sendPasswordResetEmail(auth, emailVal)
+      .then(() => successMsg.textContent = "Password reset email sent")
+      .catch(() => errorMsg.textContent = "Error sending reset email");
+  };
 </script>
 
 </body>
