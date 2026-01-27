@@ -1,307 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DEBLUG – Sign Up</title>
+<meta charset="UTF-8">
+<title>DEBLUG – Sign Up</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #e5e7eb;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      margin: 0;
-    }
+<style>
+body {
+  background: #0f172a;
+  color: #e5e7eb;
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
 
-    .card {
-      background: #020617;
-      padding: 30px;
-      border-radius: 12px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    }
+.card {
+  background: #020617;
+  padding: 30px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+}
 
-    h1, h2 { text-align: center; color: #38bdf8; }
-    input {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 6px;
-      border: 1px solid #334155;
-      background: #020617;
-      color: #e5e7eb;
-      font-size: 14px;
-    }
+h1, h2 { text-align: center; color: #38bdf8; }
 
-    #usernameHint div {
-      font-size: 12px;
-      margin-top: 4px;
-      color: #ccc;
-    }
+input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #020617;
+  color: #e5e7eb;
+}
 
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 15px;
-      border-radius: 6px;
-      border: none;
-      background: #38bdf8;
-      color: #020617;
-      font-weight: bold;
-      cursor: pointer;
-    }
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  border-radius: 6px;
+  border: none;
+  background: #38bdf8;
+  color: #020617;
+  font-weight: bold;
+  cursor: pointer;
+}
 
-    button:hover { background: #0ea5e9; }
+button:disabled {
+  background: #334155;
+  cursor: not-allowed;
+}
 
-    button:disabled {
-      background: #334155;
-      cursor: not-allowed;
-    }
+#status, #usernameStatus {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 13px;
+}
 
-    #status, #usernameStatus {
-      font-size: 13px;
-      margin-top: 10px;
-      text-align: center;
-    }
+.hidden { display: none; }
 
-    .hidden { display: none; }
-
-    /* Terms modal */
-    .modal {
-      display: none; 
-      position: fixed;
-      z-index: 10;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.7);
-    }
-
-    .modal-content {
-      background-color: #020617;
-      margin: 10% auto;
-      padding: 20px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 500px;
-      color: #e5e7eb;
-    }
-
-    .close {
-      color: #38bdf8;
-      float: right;
-      font-size: 20px;
-      cursor: pointer;
-    }
-
-    a { color: #38bdf8; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-  </style>
+a { color: #38bdf8; text-decoration: none; }
+</style>
 </head>
 <body>
 
-  <div class="card">
+<div class="card">
 
-    <!-- STEP 1: Email + Password -->
-    <div id="step1">
-      <h1>DEBLUG Sign Up</h1>
-      <input type="email" id="email" placeholder="Email">
-      <input type="password" id="password" placeholder="Password">
-      <input type="text" id="referral" placeholder="Referral code (optional)">
-      <button id="nextStep">Next</button>
-      <div id="status"></div>
+<div id="step1">
+  <h1>DEBLUG Sign Up</h1>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+  <button id="nextStep">Next</button>
+  <div id="status"></div>
 
-      <!-- Link to login for existing users -->
-      <div style="margin-top:15px; text-align:center; font-size:13px;">
-        Already have an account? 
-        <a href="login.html">Login here</a>
-      </div>
-    </div>
+  <p style="text-align:center;font-size:13px;">
+    Already have an account? <a href="login.html">Login</a>
+  </p>
+</div>
 
-    <!-- STEP 2: Username -->
-    <div id="step2" class="hidden">
-      <h2>Choose Username</h2>
-      <input type="text" id="username" placeholder="Username" readonly>
-      <button id="editUsernameBtn">Edit</button>
+<div id="step2" class="hidden">
+  <h2>Choose Username</h2>
+  <input type="text" id="username">
+  <button id="finishSignup">Finish Signup</button>
+  <div id="usernameStatus"></div>
+</div>
 
-      <div id="usernameHint">
-        <div id="charHint">Minimum 8 characters</div>
-        <div id="numberHint">Must include at least 2 numbers</div>
-      </div>
+</div>
 
-      <div style="margin-top:10px;">
-        <input type="checkbox" id="terms"> I have read the <a href="#" id="termsLink">Terms and Conditions</a>
-      </div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-      <button id="finishSignup" disabled>Finish Signup</button>
-      <div id="usernameStatus"></div>
-    </div>
+const firebaseConfig = {
+  apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
+  authDomain: "fir-chat-f8d55.firebaseapp.com",
+  projectId: "fir-chat-f8d55",
+  storageBucket: "fir-chat-f8d55.firebasestorage.app",
+  messagingSenderId: "792896094694",
+  appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
+};
 
-  </div>
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-  <!-- Terms modal -->
-  <div id="termsModal" class="modal">
-    <div class="modal-content">
-      <span class="close" id="closeModal">&times;</span>
-      <h3>Terms and Conditions</h3>
-      <p>
-        Welcome to DEBLUG! By signing up, you agree to our terms of use, privacy policy, and community guidelines.
-        Use responsibly and respect others. All content you post should comply with local laws. DEBLUG is not
-        responsible for user-generated content. You may be monetized for your posts under our rules. 
-        Enjoy connecting and sharing safely!
-      </p>
-    </div>
-  </div>
+const step1 = document.getElementById("step1");
+const step2 = document.getElementById("step2");
 
-  <script type="module">
+let emailStore = "", passwordStore = "";
 
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, updateDoc, increment, query, collection, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+nextStep.onclick = () => {
+  emailStore = email.value.trim();
+  passwordStore = password.value.trim();
+  if (!emailStore || !passwordStore) {
+    status.textContent = "All fields required";
+    return;
+  }
+  step1.classList.add("hidden");
+  step2.classList.remove("hidden");
+};
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
-      authDomain: "fir-chat-f8d55.firebaseapp.com",
-      projectId: "fir-chat-f8d55",
-      storageBucket: "fir-chat-f8d55.firebasestorage.app",
-      messagingSenderId: "792896094694",
-      appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
-    };
+finishSignup.onclick = async () => {
+  const username = username.value.trim().toLowerCase();
+  if (!username) {
+    usernameStatus.textContent = "Username required";
+    return;
+  }
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const step1 = document.getElementById("step1");
-    const step2 = document.getElementById("step2");
-    const nextStep = document.getElementById("nextStep");
-    const finishSignup = document.getElementById("finishSignup");
-    const usernameInput = document.getElementById("username");
-    const editBtn = document.getElementById("editUsernameBtn");
-    const charHint = document.getElementById("charHint");
-    const numberHint = document.getElementById("numberHint");
-    const usernameStatus = document.getElementById("usernameStatus");
-    const termsCheckbox = document.getElementById("terms");
-
-    let signupData = {};
-
-    // Step 1 → Step 2
-    nextStep.addEventListener("click", async () => {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const referral = document.getElementById("referral").value.trim();
-      const status = document.getElementById("status");
-
-      if (!email || !password) { status.innerText = "Email and password required"; return; }
-
-      status.innerText = "Checking email...";
-      try {
-        const userQuery = query(collection(db, "users"), where("email", "==", email));
-        const snap = await getDocs(userQuery);
-        if (!snap.empty) { status.innerText = "Email already exists"; return; }
-
-        signupData.email = email;
-        signupData.password = password;
-        signupData.referral = referral;
-        step1.classList.add("hidden");
-        step2.classList.remove("hidden");
-
-        // Auto username
-        const countSnap = await getDocs(collection(db, "users"));
-        const suggested = "user" + (countSnap.size + 1).toString().padStart(2,"0");
-        usernameInput.value = suggested;
-
-        validateUsername(); // initial validation
-
-      } catch(err) { status.innerText = err.message; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, emailStore, passwordStore);
+    await setDoc(doc(db, "users", cred.user.uid), {
+      email: emailStore,
+      username,
+      createdAt: Date.now()
     });
 
-    // Enable editing username
-    editBtn.addEventListener("click", () => {
-      usernameInput.removeAttribute("readonly");
-      usernameInput.focus();
-    });
-
-    // Username validation function
-    async function validateUsername() {
-      const val = usernameInput.value.trim();
-      const numCount = val.replace(/[^0-9]/g,"").length;
-
-      // Character hint
-      charHint.style.color = val.length >= 8 ? "green" : "red";
-      // Number hint
-      numberHint.style.color = numCount >=2 ? "green" : "red";
-
-      // Check availability only if both green
-      if(charHint.style.color==="green" && numberHint.style.color==="green") {
-        const q = query(collection(db,"users"), where("username","==",val.toLowerCase()));
-        const snap = await getDocs(q);
-        usernameStatus.innerText = !snap.empty ? "Already exists" : "Ready for use";
-        usernameStatus.style.color = !snap.empty ? "red" : "green";
-      } else { usernameStatus.innerText=""; }
-
-      updateFinishBtn();
-    }
-
-    usernameInput.addEventListener("input", validateUsername);
-    termsCheckbox.addEventListener("change", updateFinishBtn);
-
-    function updateFinishBtn() {
-      const ready = charHint.style.color==="green" && numberHint.style.color==="green" &&
-                    usernameStatus.innerText==="Ready for use" && termsCheckbox.checked;
-      finishSignup.disabled = !ready;
-    }
-
-    // Finish signup
-    finishSignup.addEventListener("click", async () => {
-      const username = usernameInput.value.trim().toLowerCase();
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, signupData.email, signupData.password);
-        const uid = cred.user.uid;
-
-        await setDoc(doc(db,"users",uid),{
-          email: signupData.email,
-          username,
-          referralCode: uid.slice(0,6),
-          referredBy: signupData.referral||null,
-          createdAt: Date.now(),
-          followers:0,
-          following:0,
-          balance:0
-        });
-
-        // Referral reward
-        if(signupData.referral){
-          const refQuery = query(collection(db,"users"), where("referralCode","==",signupData.referral));
-          const snap = await getDocs(refQuery);
-          if(!snap.empty){
-            const refUser = snap.docs[0];
-            await updateDoc(doc(db,"users",refUser.id), { balance: increment(100) });
-          }
-        }
-
-        usernameStatus.innerText="Account created! Redirecting...";
-        setTimeout(()=>{ window.location.href="fyp.html"; },1500);
-
-      } catch(err){ usernameStatus.innerText=err.message; }
-    });
-
-    // Terms modal
-    const termsLink = document.getElementById("termsLink");
-    const modal = document.getElementById("termsModal");
-    const closeModal = document.getElementById("closeModal");
-
-    termsLink.addEventListener("click", (e)=>{ e.preventDefault(); modal.style.display="block"; });
-    closeModal.addEventListener("click", ()=>{ modal.style.display="none"; });
-    window.addEventListener("click", (e)=>{ if(e.target==modal) modal.style.display="none"; });
-
-  </script>
+    window.location.href = "fyp.html";
+  } catch (err) {
+    usernameStatus.textContent = err.message;
+  }
+};
+</script>
 
 </body>
 </html>
