@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEBLUG • For You</title>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+import { getFirestore, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
+  authDomain: "fir-chat-f8d55.firebaseapp.com",
+  projectId: "fir-chat-f8d55",
+  storageBucket: "fir-chat-f8d55.firebasestorage.app",
+  messagingSenderId: "792896094694",
+  appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const MAX_LINES = 5;
+
+window.loadPosts = async () => {
+  const postsContainer = document.getElementById('postsContainer');
+  postsContainer.innerHTML = '<p style="text-align:center;color:var(--muted);">Loading posts...</p>';
+
+  const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+  const snapshot = await getDocs(q);
+
+  postsContainer.innerHTML = '';
+  snapshot.forEach(doc => {
+    const post = doc.data();
+    const postEl = document.createElement('div');
+    postEl.className = 'post';
+    postEl.dataset.postId = doc.id;
+
+    postEl.innerHTML = `
+      <div class="post-header">
+        <div class="avatar" onclick="location.href='dashboard.html'"></div>
+        <div class="username" onclick="location.href='dashboard.html'">${post.username}</div>
+        <button class="follow-btn" onclick="followUser('${post.userId}', event)">Follow</button>
+      </div>
+      <div class="content" data-full-content="${post.content.replace(/"/g,'&quot;')}" onclick="openPost('${doc.id}')">
+        ${truncatePost(post.content)}
+      </div>
+      <div class="post-stats">
+        <div class="stat"><i data-lucide="heart"></i> ${post.likes || 0}</div>
+        <div class="stat"><i data-lucide="message-circle"></i> ${post.comments || 0}</div>
+        <div class="stat"><i data-lucide="bar-chart-2"></i> ${post.views || 0}</div>
+      </div>
+      <button class="share-btn" onclick="openShareModal('${doc.id}', event)"><i data-lucide="share-2"></i></button>
+    `;
+
+    postsContainer.appendChild(postEl);
+  });
+
+  lucide.createIcons();
+};
+
+function truncatePost(content) {
+  const lines = content.split('\n');
+  if(lines.length <= MAX_LINES) return content.replace(/\n/g,'<br>');
+  const truncated = lines.slice(0, MAX_LINES).join('<br>');
+  return `${truncated}<span class="view-more" onclick="expandPost(event)">... View more</span>`;
+}
+
+function expandPost(event) {
+  event.stopPropagation();
+  const span = event.target;
+  const parent = span.parentElement;
+  parent.innerHTML = parent.dataset.fullContent.replace(/\n/g,'<br>') +
+                     `<span class="view-less" onclick="collapsePost(event)"> View less</span>`;
+}
+
+function collapsePost(event) {
+  event.stopPropagation();
+  const span = event.target;
+  const parent = span.parentElement;
+  parent.innerHTML = truncatePost(parent.dataset.fullContent);
+}
+
+function openPost(postId) {
+  window.location.href = `all.html?id=${postId}`;
+}
+
+function followUser(userId, event) {
+  event.stopPropagation();
+  alert('Follow action for user: ' + userId);
+}
+
+function openShareModal(postId, event) {
+  event.stopPropagation();
+  const modal = document.getElementById('shareModal');
+  modal.style.display = 'flex';
+  document.getElementById('shareLink').value = `https://yourapp.com/all.html?id=${postId}`;
+}
+
+function copyLink() {
+  const linkInput = document.getElementById('shareLink');
+  linkInput.select();
+  document.execCommand('copy');
+  alert('Link copied to clipboard!');
+}
+
+function closeShareModal() {
+  document.getElementById('shareModal').style.display = 'none';
+}
+</script>
+
+<link href="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" rel="preload" as="script">
+
+<style>
+:root {
+  --bg:#fff; --text:#111827; --muted:#6b7280; --border:#e5e7eb; --accent:#2563eb; --card:#f9fafb;
+}
+body.dark { --bg:#1e293b; --text:#f8fafc; --muted:#94a3b8; --border:#475569; --card:#0f172a; }
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+body{background:var(--bg);color:var(--text);overflow-x:hidden;}
+
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:100;}
+.logo{font-weight:700;font-size:18px;letter-spacing:0.5px;}
+.icon-btn{background:none;border:none;cursor:pointer;color:var(--text);}
+
+main{padding-bottom:70px;}
+
+.post{padding:16px;border-bottom:1px solid var(--border);position:relative;}
+.post-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--border);cursor:pointer;}
+.username{font-weight:600;font-size:14px;cursor:pointer;}
+.follow-btn{margin-left:auto;padding:4px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:var(--card);color:var(--text);}
+.content{font-size:14px;line-height:1.5;margin-bottom:12px;cursor:pointer;}
+.view-more,.view-less{color:var(--accent);cursor:pointer;}
+
+.post-stats{display:flex;gap:12px;font-size:12px;color:var(--muted);margin-bottom:8px;}
+.post-stats .stat{display:flex;align-items:center;gap:4px;cursor:pointer;}
+
+.share-btn{position:absolute;bottom:16px;right:16px;border:none;background:none;cursor:pointer;color:var(--muted);}
+
+nav{position:fixed;bottom:0;left:0;right:0;border-top:1px solid var(--border);background:var(--bg);display:flex;justify-content:space-around;padding:10px 0;}
+nav a{text-decoration:none;color:var(--muted);font-size:11px;display:flex;flex-direction:column;align-items:center;gap:4px;}
+nav a.active{color:var(--accent);}
+
+.drawer-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);opacity:0;pointer-events:none;transition:0.3s;z-index:5;}
+.drawer-overlay.active{opacity:1;pointer-events:auto;}
+.drawer{position:fixed;top:0;left:-260px;width:260px;height:100vh;background:var(--bg);border-right:1px solid var(--border);transition:0.3s;padding:16px;z-index:10;overflow-y:auto;}
+.drawer.open{left:0;}
+.drawer .profile{display:flex;align-items:center;gap:12px;margin-bottom:20px;cursor:pointer;}
+.drawer ul{list-style:none;padding-left:0;}
+.drawer li{display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--text);cursor:pointer;}
+.drawer li i{width:20px;height:20px;}
+.drawer .bottom-actions{margin-top:30px;display:flex;flex-direction:column;gap:10px;}
+.logout,.theme-toggle{padding:10px;border:1px solid var(--border);text-align:center;border-radius:6px;cursor:pointer;}
+
+#shareModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background: rgba(0,0,0,0.3);justify-content:center;align-items:center;z-index:1000;}
+#shareModal .modal-content{background:var(--card);padding:20px;border-radius:8px;width:90%;max-width:300px;display:flex;flex-direction:column;gap:10px;}
+#shareModal input{width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;}
+#shareModal button{padding:6px;border:none;background:var(--accent);color:#fff;border-radius:6px;cursor:pointer;}
+</style>
+
+</head>
+<body onload="loadPosts()">
+
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <div class="profile" onclick="location.href='dashboard.html'">
+    <div class="avatar"></div>
+    <div>
+      <div class="username">username</div>
+      <small class="muted">0 followers • 0 following</small>
+    </div>
+  </div>
+  <ul>
+    <li onclick="location.href='dashboard.html'"><i data-lucide="user"></i>Profile</li>
+    <li onclick="location.href='engage.html'"><i data-lucide="users"></i>Followers / Following</li>
+    <li onclick="location.href='action.html'"><i data-lucide="bell"></i>Notifications</li>
+    <li onclick="location.href='action.html'"><i data-lucide="settings"></i>Settings</li>
+    <li onclick="location.href='action.html'"><i data-lucide="help-circle"></i>Help Center</li>
+    <li onclick="location.href='chat.html'"><i data-lucide="message-square"></i>Chat</li>
+    <li onclick="location.href='monetize.html'"><i data-lucide="wallet"></i>Monetization</li>
+  </ul>
+  <div class="bottom-actions">
+    <div class="theme-toggle" onclick="toggleTheme()">Toggle Dark/Light Mode</div>
+    <div class="logout" onclick="logout()">Log out</div>
+  </div>
+</aside>
+
+<header>
+  <button class="icon-btn" onclick="openDrawer()"><i data-lucide="menu"></i></button>
+  <div class="logo">DEBLUG</div>
+  <button class="icon-btn" onclick="search()"><i data-lucide="search"></i></button>
+</header>
+
+<main id="postsContainer"></main>
+
+<nav>
+  <a href="fyp.html" class="active"><i data-lucide="home"></i>Home</a>
+  <a href="monetize.html"><i data-lucide="wallet"></i>Monetise</a>
+  <a href="#"><i data-lucide="plus-square"></i>Post</a>
+  <a href="action.html"><i data-lucide="bell"></i>Notify</a>
+  <a href="chat.html"><i data-lucide="message-square"></i>Chat</a>
+</nav>
+
+<div id="shareModal">
+  <div class="modal-content">
+    <input type="text" id="shareLink" readonly>
+    <button onclick="copyLink()">Copy Link</button>
+    <button onclick="closeShareModal()">Close</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+lucide.createIcons();
+
+const drawer = document.getElementById('drawer');
+const overlay = document.getElementById('drawerOverlay');
+
+function openDrawer(){drawer.classList.add('open');overlay.classList.add('active');}
+function closeDrawer(){drawer.classList.remove('open');overlay.classList.remove('active');}
+
+let startX=0;
+document.body.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;});
+document.body.addEventListener('touchmove',e=>{
+  let touchX=e.touches[0].clientX;
+  if(startX<50&&touchX-startX>80)openDrawer();
+  if(drawer.classList.contains('open')&&startX-touchX>80)closeDrawer();
+});
+
+function toggleTheme(){ 
+  document.body.classList.toggle('dark'); 
+  document.querySelector('.theme-toggle').style.color=document.body.classList.contains('dark')?'#fff':'#111827';
+  document.querySelectorAll('.share-btn').forEach(btn=>{btn.style.color=document.body.classList.contains('dark')?'#fff':'var(--muted)';});
+}
+
+function search(){alert('Search coming soon');}
+function logout(){alert('Logging out...');location.href='login.html';}
+</script>
+
+</body>
+      </html>
