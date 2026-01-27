@@ -2,97 +2,53 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DEBLUG – Sign Up</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<title>DEBLUG – Sign Up</title>
 <style>
-body {
-  background: #0f172a;
-  color: #e5e7eb;
-  font-family: Arial, sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-
-.card {
-  background: #020617;
-  padding: 30px;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 400px;
-}
-
-h1, h2 { text-align: center; color: #38bdf8; }
-
-input {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  border-radius: 6px;
-  border: 1px solid #334155;
-  background: #020617;
-  color: #e5e7eb;
-}
-
-button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 15px;
-  border-radius: 6px;
-  border: none;
-  background: #38bdf8;
-  color: #020617;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-button:disabled {
-  background: #334155;
-  cursor: not-allowed;
-}
-
-#status, #usernameStatus {
-  text-align: center;
-  margin-top: 10px;
-  font-size: 13px;
-}
-
-.hidden { display: none; }
-
-a { color: #38bdf8; text-decoration: none; }
+body{font-family:Arial,sans-serif;background:#0f172a;color:#e5e7eb;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;}
+.card{background:#020617;padding:30px;border-radius:12px;width:100%;max-width:400px;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+h1,h2{text-align:center;color:#38bdf8;}
+input{width:100%;padding:12px;margin-top:10px;border-radius:6px;border:1px solid #334155;background:#020617;color:#e5e7eb;font-size:14px;}
+button{width:100%;padding:12px;margin-top:15px;border-radius:6px;border:none;background:#38bdf8;color:#020617;font-weight:bold;cursor:pointer;}
+button:hover{background:#0ea5e9;}
+button:disabled{background:#334155;cursor:not-allowed;}
+#status,#usernameStatus{font-size:13px;margin-top:10px;text-align:center;}
+.hidden{display:none;}
 </style>
 </head>
 <body>
 
 <div class="card">
+  <div id="step1">
+    <h1>DEBLUG Sign Up</h1>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <input type="text" id="referral" placeholder="Referral code (optional)">
+    <button id="nextStep">Next</button>
+    <div id="status"></div>
+    <div style="margin-top:15px;text-align:center;font-size:13px;">
+      Already have an account? <a href="login.html">Login here</a>
+    </div>
+  </div>
 
-<div id="step1">
-  <h1>DEBLUG Sign Up</h1>
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
-  <button id="nextStep">Next</button>
-  <div id="status"></div>
-
-  <p style="text-align:center;font-size:13px;">
-    Already have an account? <a href="login.html">Login</a>
-  </p>
-</div>
-
-<div id="step2" class="hidden">
-  <h2>Choose Username</h2>
-  <input type="text" id="username">
-  <button id="finishSignup">Finish Signup</button>
-  <div id="usernameStatus"></div>
-</div>
-
+  <div id="step2" class="hidden">
+    <h2>Choose Username</h2>
+    <input type="text" id="username" placeholder="Username" readonly>
+    <button id="editUsernameBtn">Edit</button>
+    <div id="charHint">Minimum 8 characters</div>
+    <div id="numberHint">Must include at least 2 numbers</div>
+    <div style="margin-top:10px;">
+      <input type="checkbox" id="terms"> I accept <a href="#">Terms & Conditions</a>
+    </div>
+    <button id="finishSignup" disabled>Finish Signup</button>
+    <div id="usernameStatus"></div>
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, query, collection, where, getDocs, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
@@ -109,40 +65,80 @@ const db = getFirestore(app);
 
 const step1 = document.getElementById("step1");
 const step2 = document.getElementById("step2");
+const nextStep = document.getElementById("nextStep");
+const finishSignup = document.getElementById("finishSignup");
+const usernameInput = document.getElementById("username");
+const editBtn = document.getElementById("editUsernameBtn");
+const charHint = document.getElementById("charHint");
+const numberHint = document.getElementById("numberHint");
+const usernameStatus = document.getElementById("usernameStatus");
+const termsCheckbox = document.getElementById("terms");
 
-let emailStore = "", passwordStore = "";
+let signupData = {};
 
-nextStep.onclick = () => {
-  emailStore = email.value.trim();
-  passwordStore = password.value.trim();
-  if (!emailStore || !passwordStore) {
-    status.textContent = "All fields required";
-    return;
-  }
-  step1.classList.add("hidden");
-  step2.classList.remove("hidden");
-};
+// Step1 → Step2
+nextStep.addEventListener("click", async()=>{
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const referral = document.getElementById("referral").value.trim();
+  if(!email||!password){document.getElementById("status").innerText="Email & password required";return;}
+  // Check if email exists
+  const userQuery = query(collection(db,"users"),where("email","==",email));
+  const snap = await getDocs(userQuery);
+  if(!snap.empty){document.getElementById("status").innerText="Email exists";return;}
+  signupData={email,password,referral};
+  step1.classList.add("hidden"); step2.classList.remove("hidden");
+  const countSnap = await getDocs(collection(db,"users"));
+  usernameInput.value="user"+(countSnap.size+1).toString().padStart(2,"0");
+  validateUsername();
+});
 
-finishSignup.onclick = async () => {
-  const username = username.value.trim().toLowerCase();
-  if (!username) {
-    usernameStatus.textContent = "Username required";
-    return;
-  }
+editBtn.addEventListener("click", ()=>{ usernameInput.removeAttribute("readonly"); usernameInput.focus(); });
 
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, emailStore, passwordStore);
-    await setDoc(doc(db, "users", cred.user.uid), {
-      email: emailStore,
+async function validateUsername(){
+  const val=usernameInput.value.trim();
+  const numCount=val.replace(/[^0-9]/g,"").length;
+  charHint.style.color=val.length>=8?"green":"red";
+  numberHint.style.color=numCount>=2?"green":"red";
+  if(charHint.style.color==="green"&&numberHint.style.color==="green"){
+    const q=query(collection(db,"users"),where("username","==",val.toLowerCase()));
+    const snap=await getDocs(q);
+    usernameStatus.innerText=!snap.empty?"Already exists":"Ready for use";
+    usernameStatus.style.color=!snap.empty?"red":"green";
+  }else{usernameStatus.innerText="";}
+  updateFinishBtn();
+}
+
+usernameInput.addEventListener("input",validateUsername);
+termsCheckbox.addEventListener("change",updateFinishBtn);
+function updateFinishBtn(){
+  finishSignup.disabled=!(charHint.style.color==="green"&&numberHint.style.color==="green"&&usernameStatus.innerText==="Ready for use"&&termsCheckbox.checked);
+}
+
+// Finish signup
+finishSignup.addEventListener("click", async()=>{
+  const username=usernameInput.value.trim().toLowerCase();
+  try{
+    const cred=await createUserWithEmailAndPassword(auth,signupData.email,signupData.password);
+    const uid=cred.user.uid;
+    await setDoc(doc(db,"users",uid),{
+      email:signupData.email,
       username,
-      createdAt: Date.now()
+      referralCode:uid.slice(0,6),
+      referredBy:signupData.referral||null,
+      createdAt:Date.now(),
+      followers:0,following:0,balance:0
     });
-
-    window.location.href = "fyp.html";
-  } catch (err) {
-    usernameStatus.textContent = err.message;
-  }
-};
+    // referral reward
+    if(signupData.referral){
+      const refQuery=query(collection(db,"users"),where("referralCode","==",signupData.referral));
+      const snap=await getDocs(refQuery);
+      if(!snap.empty){const refUser=snap.docs[0]; await updateDoc(doc(db,"users",refUser.id),{balance:increment(100)});}
+    }
+    usernameStatus.innerText="Account created! Redirecting...";
+    setTimeout(()=>{window.location.href="fyp.html";},1500);
+  }catch(err){usernameStatus.innerText=err.message;}
+});
 </script>
 
 </body>
