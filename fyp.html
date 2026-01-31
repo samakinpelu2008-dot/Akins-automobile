@@ -1,110 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>DEBLUG – FYP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>DEBLUG – FYP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0d1117;
-  color: white;
-}
-.post {
-  border-bottom: 1px solid #222;
-  padding: 15px;
-}
-.actions {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
-}
-button {
-  background: none;
-  border: none;
-  color: #8b949e;
-  cursor: pointer;
-}
-button:hover {
-  color: white;
-}
-</style>
+  <style>
+    body {
+      margin: 0;
+      background: #0d1117;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      padding: 12px;
+      text-align: center;
+      font-weight: bold;
+      border-bottom: 1px solid #222;
+    }
+
+    .feed {
+      max-width: 600px;
+      margin: auto;
+      padding: 10px;
+    }
+
+    .post {
+      background: #161b22;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      cursor: pointer;
+    }
+
+    .username {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .content {
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .actions span {
+      cursor: pointer;
+      color: #58a6ff;
+    }
+  </style>
 </head>
-
 <body>
 
-<div id="feed"></div>
+<header>DEBLUG • For You</header>
+
+<div class="feed" id="feed"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
-  authDomain: "fir-chat-f8d55.firebaseapp.com",
-  projectId: "fir-chat-f8d55"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
+    authDomain: "fir-chat-f8d55.firebaseapp.com",
+    projectId: "fir-chat-f8d55",
+    storageBucket: "fir-chat-f8d55.firebasestorage.app",
+    messagingSenderId: "792896094694",
+    appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
+  };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const feed = document.getElementById("feed");
 
-const feed = document.getElementById("feed");
-
-onAuthStateChanged(auth, user => {
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
-
-  loadPosts();
-});
-
-function loadPosts() {
-  // TEMP posts (we replace with Firestore later)
-  const posts = [
-    {id:"1", text:"Welcome to DEBLUG 🚀 This is the first post"},
-    {id:"2", text:"This is another post on your FYP"}
-  ];
-
-  feed.innerHTML = "";
-  posts.forEach(p => {
-    const div = document.createElement("div");
-    div.className = "post";
-    div.innerHTML = `
-      <div onclick="openPost('${p.id}')">${p.text}</div>
-      <div class="actions">
-        <button onclick="likePost('${p.id}', event)">❤️</button>
-        <button onclick="followUser(event)">➕ Follow</button>
-        <button onclick="sharePost('${p.id}', event)">🔗</button>
-      </div>
-    `;
-    feed.appendChild(div);
+  // Auth guard
+  onAuthStateChanged(auth, user => {
+    if (!user) {
+      window.location.href = "login.html";
+    } else {
+      loadPosts();
+    }
   });
-}
 
-// GLOBAL handlers
-window.openPost = (id) => {
-  window.location.href = `post.html?id=${id}`;
-};
+  async function loadPosts() {
+    feed.innerHTML = "";
+    const snap = await getDocs(collection(db, "posts"));
 
-window.likePost = (id, e) => {
-  e.stopPropagation();
-  fetch(`all.html?action=like&id=${id}`);
-};
+    snap.forEach(doc => {
+      const p = doc.data();
+      const post = document.createElement("div");
+      post.className = "post";
 
-window.followUser = (e) => {
-  e.stopPropagation();
-  fetch(`all.html?action=follow`);
-};
+      post.innerHTML = `
+        <div class="username">@${p.username}</div>
+        <div class="content">${p.text}</div>
+        <div class="actions">
+          <span>❤️ Like</span>
+          <span>💬 Comment</span>
+          <span>🔁 Share</span>
+          <span>➕ Follow</span>
+        </div>
+      `;
 
-window.sharePost = (id, e) => {
-  e.stopPropagation();
-  navigator.share
-    ? navigator.share({ text: "Check this post", url: location.href })
-    : alert("Link copied!");
-};
+      // Click anywhere (except buttons later) → open full post
+      post.addEventListener("click", () => {
+        window.location.href = "post.html?id=${doc.id}";
+      });
+
+      feed.appendChild(post);
+    });
+  }
 </script>
 
 </body>
