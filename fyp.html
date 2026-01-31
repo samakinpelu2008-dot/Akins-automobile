@@ -1,123 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>DEBLUG – FYP</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>DEBLUG – FYP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      margin: 0;
-      background: #0d1117;
-      color: #fff;
-      font-family: Arial, sans-serif;
-    }
+<style>
+body {
+  margin: 0;
+  background: #0d1117;
+  color: white;
+  font-family: Arial, sans-serif;
+}
 
-    header {
-      padding: 12px;
-      text-align: center;
-      font-weight: bold;
-      border-bottom: 1px solid #222;
-    }
+header {
+  padding: 12px;
+  border-bottom: 1px solid #222;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-    .feed {
-      max-width: 600px;
-      margin: auto;
-      padding: 10px;
-    }
+header span {
+  color: #58a6ff;
+  cursor: pointer;
+}
 
-    .post {
-      background: #161b22;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 15px;
-      cursor: pointer;
-    }
+.feed {
+  max-width: 600px;
+  margin: auto;
+  padding: 10px;
+}
 
-    .username {
-      font-weight: bold;
-      margin-bottom: 8px;
-    }
+.post {
+  background: #161b22;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
 
-    .content {
-      line-height: 1.5;
-    }
+.post-text {
+  white-space: pre-wrap;
+  line-height: 1.4;
+  max-height: 22em; /* ~15 lines */
+  overflow: hidden;
+}
 
-    .actions {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
-      font-size: 14px;
-    }
+.post-text.expanded {
+  max-height: none;
+}
 
-    .actions span {
-      cursor: pointer;
-      color: #58a6ff;
-    }
-  </style>
+.view-more {
+  color: #58a6ff;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.actions span {
+  cursor: pointer;
+  color: #aaa;
+}
+
+.actions span:hover {
+  color: white;
+}
+</style>
 </head>
+
 <body>
 
-<header>DEBLUG • For You</header>
+<header>
+  <span onclick="location.href='dashboard.html'">Profile</span>
+  <strong>DEBLUG</strong>
+  <span onclick="location.href='create-post.html'">Post</span>
+</header>
 
 <div class="feed" id="feed"></div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
-    authDomain: "fir-chat-f8d55.firebaseapp.com",
-    projectId: "fir-chat-f8d55",
-    storageBucket: "fir-chat-f8d55.firebasestorage.app",
-    messagingSenderId: "792896094694",
-    appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
+  authDomain: "fir-chat-f8d55.firebaseapp.com",
+  projectId: "fir-chat-f8d55"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const feed = document.getElementById("feed");
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-  // Auth guard
-  onAuthStateChanged(auth, user => {
-    if (!user) {
-      window.location.href = "login.html";
-    } else {
-      loadPosts();
-    }
-  });
+const feed = document.getElementById("feed");
 
-  async function loadPosts() {
-    feed.innerHTML = "";
-    const snap = await getDocs(collection(db, "posts"));
-
-    snap.forEach(doc => {
-      const p = doc.data();
-      const post = document.createElement("div");
-      post.className = "post";
-
-      post.innerHTML = `
-        <div class="username">@${p.username}</div>
-        <div class="content">${p.text}</div>
-        <div class="actions">
-          <span>❤️ Like</span>
-          <span>💬 Comment</span>
-          <span>🔁 Share</span>
-          <span>➕ Follow</span>
-        </div>
-      `;
-
-      // Click anywhere (except buttons later) → open full post
-      post.addEventListener("click", () => {
-        window.location.href = "post.html?id=${doc.id}";
-      });
-
-      feed.appendChild(post);
-    });
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    location.href = "login.html";
+    return;
   }
+
+  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+
+  feed.innerHTML = "";
+
+  snap.forEach(docSnap => {
+    const data = docSnap.data();
+
+    const post = document.createElement("div");
+    post.className = "post";
+
+    const textDiv = document.createElement("div");
+    textDiv.className = "post-text";
+    textDiv.textContent = data.text;
+
+    const viewMore = document.createElement("div");
+    viewMore.className = "view-more";
+    viewMore.textContent = "View more";
+
+    viewMore.onclick = () => {
+      textDiv.classList.toggle("expanded");
+      viewMore.textContent =
+        textDiv.classList.contains("expanded") ? "View less" : "View more";
+    };
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    actions.innerHTML = `
+      <span>❤️ Like</span>
+      <span>💬 Comment</span>
+      <span>🔁 Share</span>
+    `;
+
+    // Click post body → full post page
+    textDiv.onclick = () => {
+      location.href = `post.html?id=${docSnap.id}`;
+    };
+
+    post.appendChild(textDiv);
+    if (data.text.split("\n").length > 15) post.appendChild(viewMore);
+    post.appendChild(actions);
+
+    feed.appendChild(post);
+  });
+});
 </script>
 
 </body>
