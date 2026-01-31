@@ -1,161 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>DEBLUG – Post</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create Post – DEBLUG</title>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
     body {
       margin: 0;
-      background: #0d1117;
-      color: white;
       font-family: Arial, sans-serif;
+      background: #0d1117;
+      color: #fff;
     }
 
     header {
-      padding: 12px;
-      border-bottom: 1px solid #222;
       display: flex;
       align-items: center;
-      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #222;
     }
 
-    header span {
-      cursor: pointer;
-      color: #58a6ff;
+    header h2 {
+      flex: 1;
+      text-align: center;
+      margin: 0;
+      font-size: 18px;
     }
 
     .container {
-      max-width: 600px;
-      margin: auto;
-      padding: 15px;
+      padding: 16px;
     }
 
-    .username {
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .content {
-      line-height: 1.6;
-      font-size: 16px;
-      margin-bottom: 15px;
-    }
-
-    .actions {
+    .type-switch {
       display: flex;
-      justify-content: space-between;
-      border-top: 1px solid #222;
-      border-bottom: 1px solid #222;
-      padding: 10px 0;
+      gap: 10px;
       margin-bottom: 15px;
     }
 
-    .actions span {
+    .type-switch button {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
       cursor: pointer;
-      color: #58a6ff;
+      background: #161b22;
+      color: #fff;
     }
 
-    .comments {
-      margin-top: 20px;
+    .type-switch button.active {
+      background: #238636;
     }
 
-    .comment-box {
-      opacity: 0.6;
-      font-size: 14px;
-      text-align: center;
-      padding: 20px;
-      border: 1px dashed #333;
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      background: #161b22;
+      border: none;
       border-radius: 8px;
+      padding: 12px;
+      color: #fff;
+      resize: none;
+      font-size: 15px;
+    }
+
+    /* Image-text style */
+    .image-text {
+      background: linear-gradient(135deg, #1f2937, #020617);
+      border-radius: 12px;
+      padding: 20px;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .image-text textarea {
+      background: transparent;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .post-btn {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #238636;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
 <header>
-  <span onclick="history.back()">← Back</span>
-  <div>Post</div>
+  <i data-lucide="arrow-left" onclick="history.back()"></i>
+  <h2>Create Post</h2>
 </header>
 
 <div class="container">
-  <div class="username" id="username"></div>
-  <div class="content" id="content"></div>
 
-  <div class="actions">
-    <span id="likeBtn">❤️ Like</span>
-    <span>💬 Comment</span>
-    <span id="shareBtn">🔁 Share</span>
-    <span id="followBtn">➕ Follow</span>
+  <!-- Post type switch -->
+  <div class="type-switch">
+    <button id="textBtn" class="active">Text</button>
+    <button id="imageTextBtn">Image Text</button>
   </div>
 
-  <div class="comments">
-    <div class="comment-box">
-      Comments will appear here
+  <!-- Text post -->
+  <div id="textPost">
+    <textarea id="textContent" placeholder="What’s happening?"></textarea>
+  </div>
+
+  <!-- Image-text post -->
+  <div id="imageTextPost" style="display:none;">
+    <div class="image-text">
+      <textarea id="imageTextContent" placeholder="Write something powerful…"></textarea>
     </div>
   </div>
+
+  <button class="post-btn" id="postBtn">Post</button>
+
 </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+<script>
+  lucide.createIcons();
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
-    authDomain: "fir-chat-f8d55.firebaseapp.com",
-    projectId: "fir-chat-f8d55",
-    storageBucket: "fir-chat-f8d55.firebasestorage.app",
-    messagingSenderId: "792896094694",
-    appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
+  const textBtn = document.getElementById("textBtn");
+  const imageTextBtn = document.getElementById("imageTextBtn");
+  const textPost = document.getElementById("textPost");
+  const imageTextPost = document.getElementById("imageTextPost");
+
+  textBtn.onclick = () => {
+    textBtn.classList.add("active");
+    imageTextBtn.classList.remove("active");
+    textPost.style.display = "block";
+    imageTextPost.style.display = "none";
   };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  const params = new URLSearchParams(window.location.search);
-  const postId = params.get("id");
-
-  onAuthStateChanged(auth, async user => {
-    if (!user) {
-      window.location.href = "login.html";
-      return;
-    }
-
-    if (!postId) {
-      alert("Post not found");
-      history.back();
-      return;
-    }
-
-    const snap = await getDoc(doc(db, "posts", postId));
-    if (!snap.exists()) {
-      alert("Post deleted");
-      history.back();
-      return;
-    }
-
-    const data = snap.data();
-    document.getElementById("username").innerText = "@" + data.username;
-    document.getElementById("content").innerText = data.text;
-  });
-
-  // Temporary button wiring (no errors)
-  document.getElementById("likeBtn").onclick = e => {
-    e.stopPropagation();
-    alert("Like registered (logic comes later)");
+  imageTextBtn.onclick = () => {
+    imageTextBtn.classList.add("active");
+    textBtn.classList.remove("active");
+    imageTextPost.style.display = "block";
+    textPost.style.display = "none";
   };
 
-  document.getElementById("shareBtn").onclick = e => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(window.location.href);
-    alert("Post link copied");
-  };
-
-  document.getElementById("followBtn").onclick = e => {
-    e.stopPropagation();
-    alert("Follow registered (logic comes later)");
+  // Posting logic will be connected to Firestore next
+  document.getElementById("postBtn").onclick = () => {
+    alert("Post logic connected next 🔥");
   };
 </script>
 
