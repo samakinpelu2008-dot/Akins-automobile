@@ -1,218 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DEBLUG • Post</title>
-
-<script type="module">
-// 🔹 Firebase Setup
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
-  authDomain: "fir-chat-f8d55.firebaseapp.com",
-  projectId: "fir-chat-f8d55",
-  storageBucket: "fir-chat-f8d55.firebasestorage.app",
-  messagingSenderId: "792896094694",
-  appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-const postContainer = document.getElementById('postContainer');
-const commentsContainer = document.getElementById('commentsContainer');
-
-// 🔹 Auth Guard
-onAuthStateChanged(auth, user => {
-  if (!user) window.location.href='login.html';
-  else loadPost();
-});
-
-// 🔹 Get post ID from URL
-function getPostId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('id');
-}
-
-// 🔹 Load post
-async function loadPost() {
-  const postId = getPostId();
-  if (!postId) return alert('No post ID provided');
-
-  const postRef = doc(db,'posts',postId);
-  const postSnap = await getDoc(postRef);
-  if (!postSnap.exists()) return alert('Post not found');
-
-  const post = postSnap.data();
-
-  // Increment views
-  await updateDoc(postRef, { views: increment(1) });
-
-  postContainer.innerHTML = `
-    <div class="post-header">
-      <div class="avatar" onclick="viewUser('${post.userId}')"></div>
-      <div class="username" onclick="viewUser('${post.userId}')">${post.username}</div>
-      <button class="follow-btn" onclick="followUser('${post.userId}')">Follow</button>
-    </div>
-    <div class="content">${post.content.replace(/\n/g,'<br>')}</div>
-    <div class="post-stats">
-      <div class="stat"><i data-lucide="heart"></i> <span id="likeCount">${post.likes||0}</span></div>
-      <div class="stat"><i data-lucide="message-circle"></i> <span>${post.comments||0}</span></div>
-      <div class="stat"><i data-lucide="bar-chart-2"></i> <span>${post.views||0}</span></div>
-    </div>
-    <div class="actions">
-      <button onclick="likePost('${postId}')">Like</button>
-      <button onclick="openShareModal('${postId}')">Share</button>
-    </div>
-  `;
-
-  commentsContainer.innerHTML = `<p style="text-align:center;color:var(--muted)">Comments will appear here</p>`;
-
-  lucide.createIcons();
-}
-
-// 🔹 Actions
-async function followUser(uid){
-  const user = auth.currentUser;
-  if (!user) return;
-  const userRef = doc(db,'users',uid);
-  await updateDoc(userRef,{ followers: increment(1) });
-  alert('Followed!');
-}
-
-async function likePost(postId){
-  const postRef = doc(db,'posts',postId);
-  await updateDoc(postRef,{ likes: increment(1) });
-  const likeEl = document.getElementById('likeCount');
-  likeEl.textContent = parseInt(likeEl.textContent)+1;
-}
-
-function viewUser(uid){
-  alert('View user profile: '+uid);
-}
-
-// 🔹 Share Modal
-function openShareModal(postId){
-  const modal = document.getElementById('shareModal');
-  modal.style.display='flex';
-  document.getElementById('shareLink').value = `https://yourapp.com/all.html?id=${postId}`;
-}
-
-function copyLink(){
-  const linkInput = document.getElementById('shareLink');
-  linkInput.select();
-  document.execCommand('copy');
-  alert('Link copied!');
-}
-
-function closeShareModal(){
-  document.getElementById('shareModal').style.display='none';
-}
-
-// 🔹 Drawer
-const drawer = document.getElementById('drawer');
-const overlay = document.getElementById('drawerOverlay');
-function openDrawer(){ drawer.classList.add('open'); overlay.classList.add('active'); }
-function closeDrawer(){ drawer.classList.remove('open'); overlay.classList.remove('active'); }
-
-// 🔹 Dark Mode
-function toggleTheme(){ 
-  document.body.classList.toggle('dark'); 
-  document.querySelector('.theme-toggle').style.color = document.body.classList.contains('dark')?'#fff':'#111827';
-}
-
-</script>
-
-<link href="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" rel="preload" as="script">
-<style>
-:root{--bg:#ffffff;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--accent:#2563eb;--card:#f9fafb;}
-body.dark{--bg:#1e293b;--text:#f8fafc;--muted:#94a3b8;--border:#475569;--card:#0f172a;}
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
-body{background:var(--bg);color:var(--text);overflow-x:hidden;}
-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:100;}
-.logo{font-weight:700;font-size:18px;letter-spacing:0.5px;}
-.icon-btn{background:none;border:none;cursor:pointer;color:var(--text);}
-main{padding:16px 16px 70px 16px;}
-.post-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.avatar{width:36px;height:36px;border-radius:50%;background:var(--border);cursor:pointer;}
-.username{font-weight:600;font-size:14px;cursor:pointer;}
-.follow-btn{margin-left:auto;padding:4px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:var(--card);color:var(--text);}
-.content{font-size:14px;line-height:1.5;margin-bottom:12px;}
-.post-stats{display:flex;gap:12px;font-size:12px;color:var(--muted);margin-bottom:8px;}
-.post-stats .stat{display:flex;align-items:center;gap:4px;}
-.actions button{margin-right:10px;padding:6px 12px;border:none;border-radius:6px;background:var(--accent);color:#fff;cursor:pointer;}
-nav{position:fixed;bottom:0;left:0;right:0;border-top:1px solid var(--border);background:var(--bg);display:flex;justify-content:space-around;padding:10px 0;}
-nav a{text-decoration:none;color:var(--muted);font-size:11px;display:flex;flex-direction:column;align-items:center;gap:4px;}
-nav a.active{color:var(--accent);}
-.drawer-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);opacity:0;pointer-events:none;transition:0.3s;z-index:5;}
-.drawer-overlay.active{opacity:1;pointer-events:auto;}
-.drawer{position:fixed;top:0;left:-260px;width:260px;height:100vh;background:var(--bg);border-right:1px solid var(--border);transition:0.3s;padding:16px;z-index:10;overflow-y:auto;}
-.drawer.open{left:0;}
-.drawer .profile{display:flex;align-items:center;gap:12px;margin-bottom:20px;cursor:pointer;}
-.drawer ul{list-style:none;padding-left:0;}
-.drawer li{display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--text);cursor:pointer;}
-.drawer li i{width:20px;height:20px;}
-.drawer .bottom-actions{margin-top:30px;display:flex;flex-direction:column;gap:10px;}
-.logout,.theme-toggle{padding:10px;border:1px solid var(--border);text-align:center;border-radius:6px;cursor:pointer;}
-#shareModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);justify-content:center;align-items:center;z-index:1000;}
-#shareModal .modal-content{background:var(--card);padding:20px;border-radius:8px;width:90%;max-width:300px;display:flex;flex-direction:column;gap:10px;}
-#shareModal input{width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;}
-#shareModal button{padding:6px;border:none;background:var(--accent);color:#fff;border-radius:6px;cursor:pointer;}
-</style>
-</head>
+<html>
 <body>
+<script>
+const params = new URLSearchParams(window.location.search);
+const action = params.get("action");
+const id = params.get("id");
 
-<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-<aside class="drawer" id="drawer">
-  <div class="profile" onclick="alert('Go to profile')">
-    <div class="avatar"></div>
-    <div>
-      <div class="username">username</div>
-      <small class="muted">0 followers • 0 following</small>
-    </div>
-  </div>
-  <ul>
-    <li onclick="alert('Profile')"><i data-lucide="user"></i>Profile</li>
-    <li onclick="alert('Followers / Following')"><i data-lucide="users"></i>Followers / Following</li>
-    <li onclick="alert('Notifications')"><i data-lucide="bell"></i>Notifications</li>
-    <li onclick="alert('Settings')"><i data-lucide="settings"></i>Settings</li>
-    <li onclick="alert('Help')"><i data-lucide="help-circle"></i>Help Center</li>
-    <li onclick="alert('Chat')"><i data-lucide="message-square"></i>Chat</li>
-    <li onclick="alert('Monetization')"><i data-lucide="wallet"></i>Monetization</li>
-  </ul>
-  <div class="bottom-actions">
-    <div class="theme-toggle" onclick="toggleTheme()">Toggle Dark/Light Mode</div>
-    <div class="logout" onclick="auth.signOut().then(()=>window.location.href='login.html')">Log out</div>
-  </div>
-</aside>
+console.log("ACTION:", action, "POST:", id);
 
-<header>
-  <button class="icon-btn" onclick="openDrawer()"><i data-lucide="menu"></i></button>
-  <div class="logo">DEBLUG</div>
-  <button class="icon-btn" onclick="alert('Search coming soon')"><i data-lucide="search"></i></button>
-</header>
+// TEMP – replace with Firestore
+switch(action){
+  case "like":
+    console.log("Liked post", id);
+    break;
+  case "follow":
+    console.log("Followed user");
+    break;
+  default:
+    console.log("Unknown action");
+}
 
-<main>
-  <div id="postContainer"></div>
-  <hr>
-  <h3>Comments</h3>
-  <div id="commentsContainer"></div>
-</main>
-
-<div id="shareModal">
-  <div class="modal-content">
-    <input type="text" id="shareLink" readonly>
-    <button onclick="copyLink()">Copy Link</button>
-    <button onclick="closeShareModal()">Close</button>
-  </div>
-</div>
-
-<script src="https://unpkg.com/lucide@latest"></script>
-
+document.body.innerText = "OK";
+</script>
 </body>
 </html>
