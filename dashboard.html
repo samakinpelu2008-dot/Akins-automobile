@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DEBLUG – Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      background: #0d1117;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      padding: 12px;
+      border-bottom: 1px solid #222;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header span {
+      color: #58a6ff;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      padding: 15px;
+    }
+
+    .user-box {
+      background: #161b22;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    .post {
+      background: #020617;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .post small {
+      color: #aaa;
+      font-size: 12px;
+    }
+
+    .delete {
+      margin-top: 8px;
+      color: #ff7b72;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .delete:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span onclick="window.location.href='fyp.html'">← FYP</span>
+  <div>Dashboard</div>
+  <span id="logout">Logout</span>
+</header>
+
+<div class="container">
+
+  <div class="user-box">
+    <div id="username">Loading...</div>
+    <small id="email"></small>
+  </div>
+
+  <h3>Your Posts</h3>
+  <div id="posts"></div>
+
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  import { getFirestore, collection, query, where, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
+    authDomain: "fir-chat-f8d55.firebaseapp.com",
+    projectId: "fir-chat-f8d55",
+    storageBucket: "fir-chat-f8d55.firebasestorage.app",
+    messagingSenderId: "792896094694",
+    appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const postsDiv = document.getElementById("posts");
+  const logoutBtn = document.getElementById("logout");
+
+  onAuthStateChanged(auth, async user => {
+    if (!user) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    document.getElementById("email").textContent = user.email;
+    document.getElementById("username").textContent =
+      "@" + user.email.split("@")[0];
+
+    const q = query(collection(db, "posts"), where("uid", "==", user.uid));
+    const snap = await getDocs(q);
+
+    postsDiv.innerHTML = "";
+
+    if (snap.empty) {
+      postsDiv.innerHTML = "<small>No posts yet.</small>";
+      return;
+    }
+
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+
+      const div = document.createElement("div");
+      div.className = "post";
+
+      div.innerHTML = `
+        <div>${data.text}</div>
+        <small>${data.type}</small>
+        <div class="delete">Delete</div>
+      `;
+
+      div.querySelector(".delete").onclick = async () => {
+        if (!confirm("Delete this post?")) return;
+        await deleteDoc(doc(db, "posts", docSnap.id));
+        div.remove();
+      };
+
+      postsDiv.appendChild(div);
+    });
+  });
+
+  logoutBtn.onclick = async () => {
+    await signOut(auth);
+    window.location.href = "login.html";
+  };
+</script>
+
+</body>
+</html>
