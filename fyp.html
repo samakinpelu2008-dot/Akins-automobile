@@ -2,157 +2,174 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DEBLUG – FYP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEBLUG • For You</title>
+
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
-body {
-  margin: 0;
-  background: #0d1117;
-  color: white;
-  font-family: Arial, sans-serif;
+:root {
+  --bg: #ffffff; --text: #111827; --muted: #6b7280; --border: #e5e7eb; --accent: #2563eb; --card: #f9fafb;
 }
+body.dark { --bg: #1e293b; --text: #f8fafc; --muted: #94a3b8; --border: #475569; --card: #0f172a; }
 
-header {
-  padding: 12px;
-  border-bottom: 1px solid #222;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+* { box-sizing:border-box; margin:0; padding:0; font-family: system-ui, sans-serif; }
+body { background: var(--bg); color: var(--text); overflow-x:hidden; }
 
-header span {
-  color: #58a6ff;
-  cursor: pointer;
-}
+header { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background: var(--bg); z-index:100; }
+.logo { font-weight:700; font-size:18px; letter-spacing:0.5px; }
+.icon-btn { background:none; border:none; cursor:pointer; color: var(--text); }
 
-.feed {
-  max-width: 600px;
-  margin: auto;
-  padding: 10px;
-}
+main { padding-bottom:70px; }
 
-.post {
-  background: #161b22;
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 12px;
-}
+.post { padding:16px; border-bottom:1px solid var(--border); position:relative; }
+.post-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.avatar { width:36px; height:36px; border-radius:50%; background: var(--border); cursor:pointer; }
+.username { font-weight:600; font-size:14px; cursor:pointer; }
+.follow-btn { margin-left:auto; padding:4px 10px; font-size:12px; border-radius:6px; border:1px solid var(--border); cursor:pointer; background: var(--card); color: var(--text); }
 
-.post-text {
-  white-space: pre-wrap;
-  line-height: 1.4;
-  max-height: 22em; /* ~15 lines */
-  overflow: hidden;
-}
+.content { font-size:14px; line-height:1.5; margin-bottom:12px; cursor:pointer; overflow:hidden; max-height:180px; transition:max-height 0.3s ease; }
+.content.expanded { max-height:none; }
 
-.post-text.expanded {
-  max-height: none;
-}
+.post-stats { display:flex; gap:12px; font-size:12px; color:var(--muted); margin-bottom:8px; }
+.post-stats .stat { display:flex; align-items:center; gap:4px; cursor:pointer; }
 
-.view-more {
-  color: #58a6ff;
-  font-size: 13px;
-  cursor: pointer;
-  margin-top: 5px;
-}
+.share-btn { position:absolute; bottom:16px; right:16px; border:none; background:none; cursor:pointer; color: var(--muted); }
 
-.actions {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 8px;
-  font-size: 14px;
-}
+nav { position: fixed; bottom:0; left:0; right:0; border-top:1px solid var(--border); background: var(--bg); display:flex; justify-content: space-around; padding:10px 0; }
+nav a { text-decoration:none; color:var(--muted); font-size:11px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+nav a.active { color: var(--accent); }
 
-.actions span {
-  cursor: pointer;
-  color: #aaa;
-}
-
-.actions span:hover {
-  color: white;
-}
+#shareModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.3); justify-content:center; align-items:center; z-index:1000; }
+#shareModal .modal-content { background:var(--card); padding:20px; border-radius:8px; width:90%; max-width:300px; display:flex; flex-direction:column; gap:10px; }
+#shareModal input { width:100%; padding:6px; border:1px solid var(--border); border-radius:6px; }
+#shareModal button { padding:6px; border:none; background:var(--accent); color:#fff; border-radius:6px; cursor:pointer; }
 </style>
 </head>
-
 <body>
 
 <header>
-  <span onclick="location.href='dashboard.html'">Profile</span>
-  <strong>DEBLUG</strong>
-  <span onclick="location.href='create-post.html'">Post</span>
+  <button class="icon-btn" onclick="toggleTheme()"><i data-lucide="sun"></i></button>
+  <div class="logo">DEBLUG</div>
+  <button class="icon-btn" onclick="alert('Search coming soon')"><i data-lucide="search"></i></button>
 </header>
 
-<div class="feed" id="feed"></div>
+<main id="postsContainer">
+  <p style="text-align:center; color: var(--muted);">Loading posts...</p>
+</main>
+
+<nav>
+  <a href="fyp.html" class="active"><i data-lucide="home"></i>Home</a>
+  <a href="monetize.html"><i data-lucide="wallet"></i>Monetise</a>
+  <a href="post.html"><i data-lucide="plus-square"></i>Post</a>
+  <a href="action.html"><i data-lucide="bell"></i>Notify</a>
+  <a href="chat.html"><i data-lucide="message-square"></i>Chat</a>
+</nav>
+
+<div id="shareModal">
+  <div class="modal-content">
+    <input type="text" id="shareLink" readonly>
+    <button onclick="copyLink()">Copy Link</button>
+    <button onclick="closeShareModal()">Close</button>
+  </div>
+</div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+import { getFirestore, collection, query, orderBy, getDocs, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
   authDomain: "fir-chat-f8d55.firebaseapp.com",
-  projectId: "fir-chat-f8d55"
+  projectId: "fir-chat-f8d55",
+  storageBucket: "fir-chat-f8d55.firebasestorage.app",
+  messagingSenderId: "792896094694",
+  appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-const feed = document.getElementById("feed");
+let currentUserId = "exampleUserId"; // replace with actual logged in user
 
-onAuthStateChanged(auth, async user => {
-  if (!user) {
-    location.href = "login.html";
-    return;
-  }
+window.loadPosts = async () => {
+  const postsContainer = document.getElementById('postsContainer');
+  postsContainer.innerHTML = '<p style="text-align:center;color:var(--muted);">Loading posts...</p>';
 
-  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-  const snap = await getDocs(q);
+  const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+  const snapshot = await getDocs(q);
+  postsContainer.innerHTML = '';
 
-  feed.innerHTML = "";
+  snapshot.forEach(docSnap => {
+    const post = docSnap.data();
+    const postId = docSnap.id;
 
-  snap.forEach(docSnap => {
-    const data = docSnap.data();
-
-    const post = document.createElement("div");
-    post.className = "post";
-
-    const textDiv = document.createElement("div");
-    textDiv.className = "post-text";
-    textDiv.textContent = data.text;
-
-    const viewMore = document.createElement("div");
-    viewMore.className = "view-more";
-    viewMore.textContent = "View more";
-
-    viewMore.onclick = () => {
-      textDiv.classList.toggle("expanded");
-      viewMore.textContent =
-        textDiv.classList.contains("expanded") ? "View less" : "View more";
-    };
-
-    const actions = document.createElement("div");
-    actions.className = "actions";
-    actions.innerHTML = `
-      <span>❤️ Like</span>
-      <span>💬 Comment</span>
-      <span>🔁 Share</span>
+    const postEl = document.createElement('div');
+    postEl.className = 'post';
+    postEl.innerHTML = `
+      <div class="post-header">
+        <div class="avatar" onclick="alert('Go to user profile')"></div>
+        <div class="username" onclick="alert('Go to user profile')">${post.username}</div>
+        <button class="follow-btn" onclick="toggleFollow('${post.userId}')">Follow</button>
+      </div>
+      <div class="content" data-post-id="${postId}">${post.content.replace(/\n/g,'<br>')}</div>
+      <div class="post-stats">
+        <div class="stat" onclick="toggleLike('${postId}')"><i data-lucide="heart"></i> ${post.likes?.length||0}</div>
+        <div class="stat"><i data-lucide="message-circle"></i> ${post.comments||0}</div>
+        <div class="stat"><i data-lucide="bar-chart-2"></i> ${post.views||0}</div>
+      </div>
+      <button class="share-btn" onclick="openShareModal('${postId}')"><i data-lucide="share-2"></i></button>
     `;
-
-    // Click post body → full post page
-    textDiv.onclick = () => {
-      location.href = `post.html?id=${docSnap.id}`;
-    };
-
-    post.appendChild(textDiv);
-    if (data.text.split("\n").length > 15) post.appendChild(viewMore);
-    post.appendChild(actions);
-
-    feed.appendChild(post);
+    postsContainer.appendChild(postEl);
   });
-});
+
+  lucide.createIcons();
+
+  document.querySelectorAll(".content").forEach(c => {
+    if(c.innerText.split("\n").length > 15){
+      const viewMore = document.createElement("span");
+      viewMore.innerText = " ...View More";
+      viewMore.style.color = "var(--accent)";
+      viewMore.style.cursor = "pointer";
+      viewMore.onclick = () => c.classList.toggle("expanded");
+      c.appendChild(viewMore);
+    }
+    c.addEventListener("click",()=>{window.location.href=`post.html?id=${c.dataset.postId}`});
+  });
+};
+
+async function toggleLike(postId){
+  const postRef = doc(db,"posts",postId);
+  const postSnap = await getDoc(postRef);
+  const likes = postSnap.data().likes || [];
+  if(likes.includes(currentUserId)){
+    await updateDoc(postRef,{likes: arrayRemove(currentUserId)});
+  }else{
+    await updateDoc(postRef,{likes: arrayUnion(currentUserId)});
+  }
+  loadPosts();
+}
+
+async function toggleFollow(targetUid){
+  // Placeholder: implement actual following logic
+  alert("Follow/unfollow logic here for " + targetUid);
+}
+
+function openShareModal(postId){
+  document.getElementById("shareModal").style.display="flex";
+  document.getElementById("shareLink").value=`${window.location.origin}/post.html?id=${postId}`;
+}
+function closeShareModal(){ document.getElementById("shareModal").style.display="none"; }
+function copyLink(){ document.getElementById("shareLink").select(); document.execCommand("copy"); alert("Copied!"); }
+
+function toggleTheme(){
+  document.body.classList.toggle("dark");
+}
+
+window.onload = loadPosts;
 </script>
 
 </body>
