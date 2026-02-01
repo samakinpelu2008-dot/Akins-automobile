@@ -1,26 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DEBLUG – Actions</title>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/lucide@0.277.0/dist/lucide.min.js"></script>
+</head>
 <body>
-<script>
-const params = new URLSearchParams(window.location.search);
-const action = params.get("action");
-const id = params.get("id");
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, doc, updateDoc, arrayUnion, arrayRemove, deleteDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-console.log("ACTION:", action, "POST:", id);
+const firebaseConfig = {
+  apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
+  authDomain: "fir-chat-f8d55.firebaseapp.com",
+  projectId: "fir-chat-f8d55",
+  storageBucket: "fir-chat-f8d55.firebasestorage.app",
+  messagingSenderId: "792896094694",
+  appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
+};
 
-// TEMP – replace with Firestore
-switch(action){
-  case "like":
-    console.log("Liked post", id);
-    break;
-  case "follow":
-    console.log("Followed user");
-    break;
-  default:
-    console.log("Unknown action");
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUser;
+onAuthStateChanged(auth, user=>{
+  if(!user){
+    window.location.href="login.html";
+  } else {
+    currentUser = user;
+  }
+});
+
+// Like a post
+export async function likePost(postId){
+  const postRef = doc(db,"posts",postId);
+  await updateDoc(postRef, { likes: arrayUnion(currentUser.uid) });
 }
 
-document.body.innerText = "OK";
+// Unlike a post
+export async function unlikePost(postId){
+  const postRef = doc(db,"posts",postId);
+  await updateDoc(postRef, { likes: arrayRemove(currentUser.uid) });
+}
+
+// Comment on post
+export async function addComment(postId, text){
+  if(!text) return;
+  const postRef = doc(db,"posts",postId);
+  await updateDoc(postRef, { comments: arrayUnion({ uid: currentUser.uid, text, createdAt: Date.now() }) });
+}
+
+// Delete post (only owner or admin)
+export async function deletePost(postId){
+  const postRef = doc(db,"posts",postId);
+  const postSnap = await getDocs(query(collection(db,"posts"), where("__name__","==",postId)));
+  if(!postSnap.empty){
+    const data = postSnap.docs[0].data();
+    if(currentUser.uid === data.uid || currentUser.uid === "ADMIN_UID_HERE"){
+      await deleteDoc(postRef);
+    } else {
+      alert("Not authorized to delete this post");
+    }
+  }
+}
+
+// Admin message broadcast
+export async function sendAdminMessage(text){
+  if(currentUser.uid !== "ADMIN_UID_HERE") return alert("Not authorized");
+  await addDoc(collection(db,"adminMessages"), {
+    text,
+    createdAt: Date.now()
+  });
+}
+
+// Follow / Unfollow
+export async function followUser(targetUid){
+  const userRef = doc(db,"users",currentUser.uid);
+  const targetRef = doc(db,"users",targetUid);
+  await updateDoc(userRef, { following: arrayUnion(targetUid) });
+  await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) });
+}
+
+export async function unfollowUser(targetUid){
+  const userRef = doc(db,"users",currentUser.uid);
+  const targetRef = doc(db,"users",targetUid);
+  await updateDoc(userRef, { following: arrayRemove(targetUid) });
+  await updateDoc(targetRef, { followers: arrayRemove(currentUser.uid) });
+}
+
+// Send notification to a user (admin)
+export async function sendNotification(targetUid, text){
+  if(currentUser.uid !== "ADMIN_UID_HERE") return alert("Not authorized");
+  await addDoc(collection(db,"notifications"), {
+    uid: targetUid,
+    text,
+    createdAt: Date.now()
+  });
+}
+
 </script>
 </body>
 </html>
