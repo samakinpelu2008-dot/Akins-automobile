@@ -1,115 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DEBLUG – Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <style>
-    body {
-      background: #0d1117;
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .box {
-      background: #161b22;
-      padding: 25px;
-      border-radius: 10px;
-      width: 100%;
-      max-width: 400px;
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 12px;
-      border-radius: 6px;
-      border: none;
-      outline: none;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      background: #238636;
-      border: none;
-      border-radius: 6px;
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      opacity: 0.9;
-    }
-
-    .msg {
-      text-align: center;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-
-    .error { color: #ff7b72; }
-    .success { color: #3fb950; }
-
-    .link {
-      text-align: center;
-      margin-top: 15px;
-      font-size: 14px;
-    }
-
-    .link a {
-      color: #58a6ff;
-      text-decoration: none;
-    }
-  </style>
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-<div class="box">
+<div class="container">
   <h2>Login to DEBLUG</h2>
 
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Password" />
 
   <button id="loginBtn">Login</button>
 
-  <div class="msg error" id="errorMsg"></div>
-  <div class="msg success" id="successMsg"></div>
+  <div class="error" id="errorMsg"></div>
+  <div class="success" id="successMsg"></div>
 
-  <div class="link">
+  <div class="signup">
     Don’t have an account?
     <a href="index.html">Sign up</a>
   </div>
 </div>
 
+<!-- Firebase & Auth -->
+<script type="module" src="js/firebase.js"></script>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
-    authDomain: "fir-chat-f8d55.firebaseapp.com",
-    projectId: "fir-chat-f8d55",
-    storageBucket: "fir-chat-f8d55.firebasestorage.app",
-    messagingSenderId: "792896094694",
-    appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-
   const loginBtn = document.getElementById("loginBtn");
   const errorMsg = document.getElementById("errorMsg");
   const successMsg = document.getElementById("successMsg");
@@ -127,16 +45,13 @@
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      successMsg.textContent = "Login successful!";
-      setTimeout(() => {
-        window.location.href = "fyp.html";
-      }, 800);
-    } catch (err) {
+      await window.auth.signInWithEmailAndPassword(email, password);
+      successMsg.textContent = "Login successful! Redirecting...";
+      setTimeout(() => window.location.href = "fyp.html", 1000);
+    } catch(err) {
       errorMsg.textContent = "Invalid email or password";
     }
   });
 </script>
-
 </body>
 </html>
