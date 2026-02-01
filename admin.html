@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DEBLUG – Admin Panel</title>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/lucide@0.277.0/dist/lucide.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; }
+    header { background:#2563eb; color:#fff; padding:12px 20px; font-size:18px; font-weight:bold; }
+    .container { padding:20px; }
+    textarea, input { width:100%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; }
+    button { padding:10px 15px; border:none; background:#2563eb; color:#fff; border-radius:6px; cursor:pointer; }
+    button:hover { opacity:0.9; }
+    .post, .notification { background:#fff; padding:12px; margin-bottom:10px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+    .post-header { font-weight:bold; margin-bottom:6px; }
+    .delete-btn { background:#f87171; margin-top:6px; }
+  </style>
+</head>
+<body>
+<header>Admin Panel – DEBLUG</header>
+<div class="container">
+
+  <h2>Post as Admin</h2>
+  <textarea id="adminPostContent" rows="4" placeholder="Write your post here..."></textarea>
+  <button id="adminPostBtn">Post</button>
+
+  <h2>Send Notification</h2>
+  <input type="text" id="notifyUserId" placeholder="User UID">
+  <input type="text" id="notifyText" placeholder="Notification text">
+  <button id="sendNotifyBtn">Send Notification</button>
+
+  <h2>All Posts</h2>
+  <div id="allPostsContainer"></div>
+
+  <h2>All Notifications</h2>
+  <div id="allNotifications"></div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, query, orderBy, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
+  authDomain: "fir-chat-f8d55.firebaseapp.com",
+  projectId: "fir-chat-f8d55",
+  storageBucket: "fir-chat-f8d55.firebasestorage.app",
+  messagingSenderId: "792896094694",
+  appId: "1:792896094694:web:dd373e5d7fc9ae1d5627"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const ADMIN_UID = "ADMIN_UID_HERE";
+let currentUser;
+onAuthStateChanged(auth,user=>{
+  if(!user || user.uid !== ADMIN_UID){
+    alert("Unauthorized access"); window.location.href="login.html";
+  } else { currentUser = user; loadAllPosts(); loadNotifications(); }
+});
+
+const postBtn = document.getElementById("adminPostBtn");
+const notifyBtn = document.getElementById("sendNotifyBtn");
+
+postBtn.addEventListener("click", async ()=>{
+  const text = document.getElementById("adminPostContent").value.trim();
+  if(!text) return alert("Post cannot be empty");
+  await addDoc(collection(db,"posts"),{
+    uid: ADMIN_UID,
+    username:"Admin",
+    content:text,
+    likes: [],
+    comments: [],
+    views: 0,
+    timestamp: Date.now()
+  });
+  document.getElementById("adminPostContent").value="";
+  loadAllPosts();
+});
+
+notifyBtn.addEventListener("click", async ()=>{
+  const uid = document.getElementById("notifyUserId").value.trim();
+  const text = document.getElementById("notifyText").value.trim();
+  if(!uid || !text) return alert("Fill in both fields");
+  await addDoc(collection(db,"notifications"),{ uid, text, createdAt:Date.now() });
+  document.getElementById("notifyUserId").value="";
+  document.getElementById("notifyText").value="";
+  loadNotifications();
+});
+
+async function loadAllPosts(){
+  const container = document.getElementById("allPostsContainer");
+  container.innerHTML="Loading posts...";
+  const q = query(collection(db,"posts"), orderBy("timestamp","desc"));
+  const snap = await getDocs(q);
+  container.innerHTML="";
+  snap.forEach(docSnap=>{
+    const post = docSnap.data();
+    const div = document.createElement("div");
+    div.className="post";
+    div.innerHTML=`
+      <div class="post-header">${post.username}</div>
+      <div>${post.content}</div>
+      <button class="delete-btn">Delete</button>
+    `;
+    const deleteBtn = div.querySelector(".delete-btn");
+    deleteBtn.addEventListener("click", async ()=>{
+      await deleteDoc(doc(db,"posts",docSnap.id));
+      loadAllPosts();
+    });
+    container.appendChild(div);
+  });
+}
+
+async function loadNotifications(){
+  const container = document.getElementById("allNotifications");
+  container.innerHTML="Loading notifications...";
+  const snap = await getDocs(collection(db,"notifications"));
+  container.innerHTML="";
+  snap.forEach(docSnap=>{
+    const notif = docSnap.data();
+    const div = document.createElement("div");
+    div.className="notification";
+    div.textContent=`To: ${notif.uid} | ${notif.text}`;
+    container.appendChild(div);
+  });
+}
+</script>
+</body>
+  </html>
