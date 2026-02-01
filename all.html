@@ -1,16 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DEBLUG – Actions</title>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/lucide@0.277.0/dist/lucide.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEBLUG – Actions</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f0f2f5; margin:0; padding:20px; }
+  .hidden { display:none; }
+  .comment-box { margin-top:6px; }
+  .comment-input { width:80%; padding:6px; border-radius:4px; border:1px solid #ccc; }
+  .comment-btn { padding:6px 10px; border:none; border-radius:4px; background:#2563eb; color:white; cursor:pointer; }
+</style>
 </head>
 <body>
+
+<h2>Actions Hub</h2>
+<p>This page handles all actions (like, comment, follow, share) triggered from FYP.</p>
+
+<div id="status"></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, doc, updateDoc, arrayUnion, arrayRemove, addDoc, getDoc, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, doc, updateDoc, arrayUnion, arrayRemove, deleteDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDCBD2gVIg9v-KqYaMFZeu_grgs3yKYfPs",
@@ -18,89 +30,83 @@ const firebaseConfig = {
   projectId: "fir-chat-f8d55",
   storageBucket: "fir-chat-f8d55.firebasestorage.app",
   messagingSenderId: "792896094694",
-  appId: "1:792896094694:web:dd373e5d7d2fc9ae1d5627"
+  appId: "1:792896094694:web:dd373e5d7fc9ae1d5627"
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 let currentUser;
-onAuthStateChanged(auth, user=>{
-  if(!user){
-    window.location.href="login.html";
-  } else {
-    currentUser = user;
-  }
+
+onAuthStateChanged(auth, user => {
+  if(!user){ window.location.href="login.html"; return; }
+  currentUser = user;
 });
 
-// Like a post
-export async function likePost(postId){
+// Example: Handle liking a post
+export async function toggleLike(postId){
   const postRef = doc(db,"posts",postId);
-  await updateDoc(postRef, { likes: arrayUnion(currentUser.uid) });
-}
-
-// Unlike a post
-export async function unlikePost(postId){
-  const postRef = doc(db,"posts",postId);
-  await updateDoc(postRef, { likes: arrayRemove(currentUser.uid) });
-}
-
-// Comment on post
-export async function addComment(postId, text){
-  if(!text) return;
-  const postRef = doc(db,"posts",postId);
-  await updateDoc(postRef, { comments: arrayUnion({ uid: currentUser.uid, text, createdAt: Date.now() }) });
-}
-
-// Delete post (only owner or admin)
-export async function deletePost(postId){
-  const postRef = doc(db,"posts",postId);
-  const postSnap = await getDocs(query(collection(db,"posts"), where("__name__","==",postId)));
-  if(!postSnap.empty){
-    const data = postSnap.docs[0].data();
-    if(currentUser.uid === data.uid || currentUser.uid === "ADMIN_UID_HERE"){
-      await deleteDoc(postRef);
+  const postSnap = await getDoc(postRef);
+  if(postSnap.exists()){
+    const data = postSnap.data();
+    if(data.likes.includes(currentUser.uid)){
+      await updateDoc(postRef,{ likes: arrayRemove(currentUser.uid) });
     } else {
-      alert("Not authorized to delete this post");
+      await updateDoc(postRef,{ likes: arrayUnion(currentUser.uid) });
     }
   }
 }
 
-// Admin message broadcast
-export async function sendAdminMessage(text){
-  if(currentUser.uid !== "ADMIN_UID_HERE") return alert("Not authorized");
-  await addDoc(collection(db,"adminMessages"), {
-    text,
-    createdAt: Date.now()
+// Example: Add a comment
+export async function addComment(postId, commentText){
+  if(!commentText) return;
+  const commentRef = collection(db,"posts",postId,"comments");
+  await addDoc(commentRef,{
+    uid: currentUser.uid,
+    comment: commentText,
+    timestamp: Date.now()
   });
 }
 
-// Follow / Unfollow
-export async function followUser(targetUid){
+// Example: Follow a user
+export async function toggleFollow(targetUid){
   const userRef = doc(db,"users",currentUser.uid);
   const targetRef = doc(db,"users",targetUid);
-  await updateDoc(userRef, { following: arrayUnion(targetUid) });
-  await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) });
+  const userSnap = await getDoc(userRef);
+  const targetSnap = await getDoc(targetRef);
+  if(!userSnap.exists() || !targetSnap.exists()) return;
+
+  const following = userSnap.data().following || [];
+  const followers = targetSnap.data().followers || [];
+
+  if(following.includes(targetUid)){
+    await updateDoc(userRef,{ following: arrayRemove(targetUid) });
+    await updateDoc(targetRef,{ followers: arrayRemove(currentUser.uid) });
+  } else {
+    await updateDoc(userRef,{ following: arrayUnion(targetUid) });
+    await updateDoc(targetRef,{ followers: arrayUnion(currentUser.uid) });
+  }
 }
 
-export async function unfollowUser(targetUid){
-  const userRef = doc(db,"users",currentUser.uid);
-  const targetRef = doc(db,"users",targetUid);
-  await updateDoc(userRef, { following: arrayRemove(targetUid) });
-  await updateDoc(targetRef, { followers: arrayRemove(currentUser.uid) });
-}
-
-// Send notification to a user (admin)
-export async function sendNotification(targetUid, text){
-  if(currentUser.uid !== "ADMIN_UID_HERE") return alert("Not authorized");
-  await addDoc(collection(db,"notifications"), {
-    uid: targetUid,
-    text,
-    createdAt: Date.now()
-  });
+// Example: Share (here simply duplicating the post to your feed)
+export async function sharePost(postId){
+  const postRef = doc(db,"posts",postId);
+  const postSnap = await getDoc(postRef);
+  if(postSnap.exists()){
+    const data = postSnap.data();
+    await addDoc(collection(db,"posts"),{
+      uid: currentUser.uid,
+      username: data.username,
+      content: data.content,
+      likes: [],
+      timestamp: Date.now(),
+      sharedFrom: postId
+    });
+  }
 }
 
 </script>
+
 </body>
 </html>
